@@ -1,0 +1,6 @@
+# Runtime deps (installed into the venv on the Pi). Pure-Python core modules
+# (frames.py, filters.py) need none of these and are tested standalone.
+fastapi>=0.110
+uvicorn[standard]>=0.27
+pyserial>=3.5
+python-osc>=1.8

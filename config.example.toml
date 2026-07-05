@@ -1,0 +1,45 @@
+# Telemetre Bergman — configuration.
+# Copy to config.toml and edit. Every value here is also the built-in default,
+# so an empty/missing config.toml works fine.
+
+[serial]
+# Sensor is on a Waveshare Serial Expansion HAT (SC16IS752 over I2C @ 0x48),
+# channel B => /dev/ttySC1. Needs in /boot/firmware/config.txt:
+#   dtparam=i2c_arm=on
+#   dtoverlay=sc16is752-i2c,int_pin=24,addr=0x48
+# This is an I2C board — do NOT load the SPI overlay (sc16is75x-spi); that
+# registers a phantom ttySC0 whose close() dead-locks the reader (needs reboot).
+# Leave port = "" to auto-detect (probes `candidates` for valid TF02-Pro frames).
+port = "/dev/ttySC1"
+baud = 115200
+candidates = [
+  "/dev/ttySC1",          # Serial Expansion HAT channel B — the sensor
+  "/dev/ttySC0",          # channel A
+  "/dev/serial/by-id/*",
+  "/dev/ttyUSB0",
+  "/dev/ttyACM0",
+]
+
+[filter]
+median_size    = 5      # median-of-N spike rejection (odd)
+ema_alpha      = 0.25   # smoothing: higher = snappier, lower = smoother
+hysteresis_cm  = 0.75   # display deadband to stop last-digit flicker
+publish_hz     = 20     # SSE push rate to the browsers
+stale_after_ms = 400    # no valid frame for this long => "no signal"
+
+[position]
+sign       = 1            # +1 or -1: direction the relative readout counts
+state_file = "state.json" # persists the tare zero + sign across restarts
+
+[web]
+host = "0.0.0.0"
+port = 80                 # crew browses to http://192.168.1.36
+
+[osc]
+# Future add-on — off by default. Sends the filtered position (meters) as a
+# single OSC float when enabled.
+enabled = false
+host    = "127.0.0.1"
+port    = 9000
+address = "/telemetre/position"
+rate_hz = 30

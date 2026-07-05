@@ -1,0 +1,9 @@
+# Normalize line endings; keep shell scripts LF so they run on the Pi.
+* text=auto eol=lf
+*.sh text eol=lf
+*.py text eol=lf
+
+# Binary assets
+*.pdf binary
+*.png binary
+*.jpg binary

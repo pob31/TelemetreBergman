@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Local runtime state / config (per-device, not versioned)
+config.toml
+state.json
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
