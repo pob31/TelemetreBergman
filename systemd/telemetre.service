@@ -16,10 +16,12 @@ Restart=always
 RestartSec=2
 StartLimitIntervalSec=0
 
-# Bind port 80 as a non-root user. Intentionally NO NoNewPrivileges= so the
-# app can still `sudo -n systemctl poweroff|reboot` for the web off-switch.
+# Bind port 80 as a non-root user via an ambient capability. We deliberately do
+# NOT set NoNewPrivileges= or restrict CapabilityBoundingSet= — either one strips
+# the capabilities `sudo` needs to become root, which silently breaks the web
+# Reboot / Power-Off buttons (`sudo -n systemctl poweroff|reboot`: sudo aborts
+# with "unable to change to root gid: Operation not permitted").
 AmbientCapabilities=CAP_NET_BIND_SERVICE
-CapabilityBoundingSet=CAP_NET_BIND_SERVICE
 
 [Install]
 WantedBy=multi-user.target

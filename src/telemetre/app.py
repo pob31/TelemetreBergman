@@ -70,12 +70,21 @@ async def invert():
 
 
 def _run_power(cmd: list[str]):
+    # `systemctl poweroff|reboot` queues the transition with PID 1 and returns
+    # promptly, so we can capture a fast failure (e.g. sudo denied) instead of
+    # reporting a false success while the Pi keeps running.
     try:
-        subprocess.Popen(cmd)  # fire-and-forget so the HTTP response still flushes
-        return {"ok": True}
+        p = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
+    except subprocess.TimeoutExpired:
+        return {"ok": True}  # still running after 5s: shutdown is under way
     except Exception as e:
-        log.error("Power command failed: %s", e)
+        log.error("Power command failed to launch: %s", e)
         return JSONResponse({"ok": False, "error": str(e)}, status_code=500)
+    if p.returncode != 0:
+        err = (p.stderr or p.stdout or "").strip() or f"exit {p.returncode}"
+        log.error("Power command failed: %s", err)
+        return JSONResponse({"ok": False, "error": err}, status_code=500)
+    return {"ok": True}
 
 
 @app.post("/api/poweroff")
