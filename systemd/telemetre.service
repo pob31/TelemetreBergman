@@ -14,6 +14,10 @@ Environment=TELEMETRE_CONFIG=/home/bergman/TelemetreBergman/config.toml
 ExecStart=/home/bergman/TelemetreBergman/.venv/bin/python -m telemetre
 Restart=always
 RestartSec=2
+# Backstop for reboot / power-off speed: uvicorn already caps its own graceful
+# wait (timeout_graceful_shutdown=3), but if the process ever fails to exit on
+# SIGTERM, force-kill after 5s instead of hanging shutdown for the default 90s.
+TimeoutStopSec=5s
 StartLimitIntervalSec=0
 
 # Bind port 80 as a non-root user via an ambient capability. We deliberately do

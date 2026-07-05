@@ -17,6 +17,10 @@ def main() -> None:
         port=cfg.web.port,
         workers=1,
         log_level="info",
+        # Don't block shutdown on the long-lived /stream SSE. Without this,
+        # uvicorn waits indefinitely for that connection to close, so every web
+        # reboot / power-off hung until systemd's 90s stop timeout SIGKILLed it.
+        timeout_graceful_shutdown=3,
     )
 
 

@@ -28,7 +28,7 @@
     connDot: $("conn-dot"), connText: $("conn-text"), banner: $("banner"),
     position: $("position"), raw: $("raw"), zero: $("zero"), dir: $("dir"),
     signalFill: $("signal-fill"), signalVal: $("signal-val"), temp: $("temp"),
-    overlay: $("overlay"), overlayMsg: $("overlay-msg"), overlayCancel: $("overlay-cancel"),
+    overlay: $("overlay"), overlayMsg: $("overlay-msg"),
   };
 
   const MINUS = "−"; // real minus sign, matches "+" width
@@ -103,50 +103,22 @@
   bind("btn-invert", (b) => { flash(b); post("/api/invert"); });
 
   const showOverlay = (msg) => { el.overlayMsg.textContent = msg; el.overlay.classList.remove("hidden"); };
-  const hideOverlay = () => { el.overlay.classList.add("hidden"); el.overlayCancel.classList.add("hidden"); };
   const failOverlay = (msg, err) => {
-    el.overlayCancel.classList.add("hidden");
     showOverlay(err ? msg + "\n" + err : msg);
-    setTimeout(hideOverlay, 6000);
+    setTimeout(() => el.overlay.classList.add("hidden"), 6000);
   };
 
-  // Reboot / Power-Off run after a cancellable countdown, like an OS shutdown
-  // dialog, so an accidental tap can't take the readout down mid-show.
-  const DELAY_S = 60;
-  let cdTimer = null;
-  const cancelCountdown = () => {
-    if (cdTimer) { clearInterval(cdTimer); cdTimer = null; }
-    rebooting = false;
-    hideOverlay();
-  };
-  function startCountdown(kind) {           // kind: "reboot" | "off"
-    if (cdTimer) clearInterval(cdTimer);
-    const tmpl = kind === "reboot" ? T.countdown_reboot : T.countdown_off;
-    let secs = DELAY_S;
-    const fire = () => {
-      clearInterval(cdTimer); cdTimer = null;
-      el.overlayCancel.classList.add("hidden");
-      if (kind === "reboot") {
-        rebooting = true; sawDrop = false;
-        showOverlay(T.overlay_reboot);
-        postPower("/api/reboot").then((r) => { if (r.ok === false) { rebooting = false; failOverlay(T.reboot_failed, r.error); } });
-      } else {
-        showOverlay(T.overlay_off);
-        postPower("/api/poweroff").then((r) => { if (r.ok === false) failOverlay(T.off_failed, r.error); });
-      }
-    };
-    const tick = () => {
-      if (secs <= 0) { fire(); return; }
-      el.overlayMsg.textContent = tmpl.replace("{n}", secs);
-      secs -= 1;
-    };
-    el.overlay.classList.remove("hidden");
-    el.overlayCancel.classList.remove("hidden");
-    tick();                                 // show the full delay immediately
-    cdTimer = setInterval(tick, 1000);
-  }
-
-  bind("btn-off", () => { if (confirm(T.confirm_off)) startCountdown("off"); });
-  bind("btn-reboot", () => { if (confirm(T.confirm_reboot)) startCountdown("reboot"); });
-  el.overlayCancel.addEventListener("click", cancelCountdown);
+  bind("btn-off", async () => {
+    if (!confirm(T.confirm_off)) return;
+    showOverlay(T.overlay_off);
+    const res = await postPower("/api/poweroff");
+    if (res.ok === false) failOverlay(T.off_failed, res.error);
+  });
+  bind("btn-reboot", async () => {
+    if (!confirm(T.confirm_reboot)) return;
+    rebooting = true; sawDrop = false;
+    showOverlay(T.overlay_reboot);
+    const res = await postPower("/api/reboot");
+    if (res.ok === false) { rebooting = false; failOverlay(T.reboot_failed, res.error); }
+  });
 })();
