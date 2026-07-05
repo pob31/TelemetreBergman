@@ -52,7 +52,10 @@
     </footer>
   </main>
 
-  <div id="overlay" class="overlay hidden"><div class="overlay-msg" id="overlay-msg"></div></div>
+  <div id="overlay" class="overlay hidden">
+    <div class="overlay-msg" id="overlay-msg"></div>
+    <button id="overlay-cancel" class="btn btn-ghost hidden" data-i18n="cancel">Cancel</button>
+  </div>
 
   <!-- UI strings. app.js picks "fr" when the device language is French, else "en". -->
   <script type="application/json" id="i18n">
@@ -79,7 +82,10 @@
       "confirm_reboot": "Reboot the Raspberry Pi?\n\nThe readout drops for ~30 s, then reconnects on its own.",
       "overlay_reboot": "Rebooting…\nThis page will reconnect automatically.",
       "off_failed": "⚠ Power-off failed — the Pi is still running.",
-      "reboot_failed": "⚠ Reboot failed — the Pi is still running."
+      "reboot_failed": "⚠ Reboot failed — the Pi is still running.",
+      "cancel": "Cancel",
+      "countdown_reboot": "Rebooting in {n} s\nTap Cancel to stop.",
+      "countdown_off": "Powering off in {n} s\nTap Cancel to stop."
     },
     "fr": {
       "connecting": "connexion…",
@@ -103,7 +109,10 @@
       "confirm_reboot": "Redémarrer le Raspberry Pi ?\n\nL'affichage se coupe ~30 s, puis se reconnecte tout seul.",
       "overlay_reboot": "Redémarrage…\nCette page se reconnectera automatiquement.",
       "off_failed": "⚠ Échec de l'extinction — le Pi fonctionne toujours.",
-      "reboot_failed": "⚠ Échec du redémarrage — le Pi fonctionne toujours."
+      "reboot_failed": "⚠ Échec du redémarrage — le Pi fonctionne toujours.",
+      "cancel": "Annuler",
+      "countdown_reboot": "Redémarrage dans {n} s\nToucher Annuler pour arrêter.",
+      "countdown_off": "Extinction dans {n} s\nToucher Annuler pour arrêter."
     }
   }
   </script>
