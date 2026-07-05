@@ -14,12 +14,12 @@
       <div class="brand">Telemetre <span>Bergman</span></div>
       <div class="status">
         <span id="conn-dot" class="dot"></span>
-        <span id="conn-text" class="conn-text">connecting…</span>
+        <span id="conn-text" class="conn-text" data-i18n="connecting">connecting…</span>
       </div>
     </header>
 
     <section class="readout">
-      <div id="banner" class="banner hidden">NO SIGNAL</div>
+      <div id="banner" class="banner hidden" data-i18n="no_signal">NO SIGNAL</div>
 
       <div class="position">
         <div id="position" class="position-value">—.—</div>
@@ -27,9 +27,9 @@
       </div>
 
       <div class="secondary">
-        <div class="chip"><label>raw</label><span id="raw">—.—</span> m</div>
-        <div class="chip"><label>zero</label><span id="zero">0.00</span> m</div>
-        <div class="chip"><label>dir</label><span id="dir">→</span></div>
+        <div class="chip"><label data-i18n="raw">raw</label><span id="raw">—.—</span> m</div>
+        <div class="chip"><label data-i18n="zero">zero</label><span id="zero">0.00</span> m</div>
+        <div class="chip"><label data-i18n="dir">dir</label><span id="dir">→</span></div>
       </div>
 
       <div class="signal">
@@ -39,21 +39,74 @@
     </section>
 
     <section class="controls">
-      <button id="btn-zero" class="btn btn-primary">Set&nbsp;Zero</button>
+      <button id="btn-zero" class="btn btn-primary" data-i18n="set_zero">Set&nbsp;Zero</button>
       <div class="row">
-        <button id="btn-clear" class="btn btn-ghost">Clear&nbsp;Zero</button>
-        <button id="btn-invert" class="btn btn-ghost">Invert&nbsp;Direction</button>
+        <button id="btn-clear" class="btn btn-ghost" data-i18n="clear_zero">Clear&nbsp;Zero</button>
+        <button id="btn-invert" class="btn btn-ghost" data-i18n="invert">Invert&nbsp;Direction</button>
       </div>
     </section>
 
     <footer class="powerbar">
-      <button id="btn-reboot" class="btn btn-warn">Reboot</button>
-      <button id="btn-off" class="btn btn-danger">Power&nbsp;Off</button>
+      <button id="btn-reboot" class="btn btn-warn" data-i18n="reboot">Reboot</button>
+      <button id="btn-off" class="btn btn-danger" data-i18n="power_off">Power&nbsp;Off</button>
     </footer>
   </main>
 
   <div id="overlay" class="overlay hidden"><div class="overlay-msg" id="overlay-msg"></div></div>
 
+  <!-- UI strings. app.js picks "fr" when the device language is French, else "en". -->
+  <script type="application/json" id="i18n">
+  {
+    "en": {
+      "connecting": "connecting…",
+      "connected": "connected",
+      "reconnecting": "reconnecting…",
+      "no_sensor": "no sensor",
+      "lost": "lost",
+      "weak": "weak / no target",
+      "sensor_offline": "SENSOR OFFLINE",
+      "no_signal": "NO SIGNAL",
+      "raw": "raw",
+      "zero": "zero",
+      "dir": "dir",
+      "set_zero": "Set Zero",
+      "clear_zero": "Clear Zero",
+      "invert": "Invert Direction",
+      "reboot": "Reboot",
+      "power_off": "Power Off",
+      "confirm_off": "Power OFF the Raspberry Pi?\n\nThe readout will go offline until someone powers it back on.",
+      "overlay_off": "Powering off…\nWait for the Pi's LED to stop blinking, then it's safe to unplug.",
+      "confirm_reboot": "Reboot the Raspberry Pi?\n\nThe readout drops for ~30 s, then reconnects on its own.",
+      "overlay_reboot": "Rebooting…\nThis page will reconnect automatically.",
+      "off_failed": "⚠ Power-off failed — the Pi is still running.",
+      "reboot_failed": "⚠ Reboot failed — the Pi is still running."
+    },
+    "fr": {
+      "connecting": "connexion…",
+      "connected": "connecté",
+      "reconnecting": "reconnexion…",
+      "no_sensor": "aucun capteur",
+      "lost": "perdu",
+      "weak": "faible / pas de cible",
+      "sensor_offline": "CAPTEUR HORS LIGNE",
+      "no_signal": "AUCUN SIGNAL",
+      "raw": "brut",
+      "zero": "zéro",
+      "dir": "sens",
+      "set_zero": "Mise à zéro",
+      "clear_zero": "Effacer le zéro",
+      "invert": "Inverser le sens",
+      "reboot": "Redémarrer",
+      "power_off": "Éteindre",
+      "confirm_off": "Éteindre le Raspberry Pi ?\n\nL'affichage sera hors ligne jusqu'à ce que quelqu'un le rallume.",
+      "overlay_off": "Extinction…\nAttendez que la LED du Pi cesse de clignoter avant de débrancher.",
+      "confirm_reboot": "Redémarrer le Raspberry Pi ?\n\nL'affichage se coupe ~30 s, puis se reconnecte tout seul.",
+      "overlay_reboot": "Redémarrage…\nCette page se reconnectera automatiquement.",
+      "off_failed": "⚠ Échec de l'extinction — le Pi fonctionne toujours.",
+      "reboot_failed": "⚠ Échec du redémarrage — le Pi fonctionne toujours."
+    }
+  }
+  </script>
   <script src="/app.js"></script>
 </body>
 </html>

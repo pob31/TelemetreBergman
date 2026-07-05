@@ -1,5 +1,19 @@
 "use strict";
 (() => {
+  // ---- i18n: French when the device's default language is French, else English.
+  // Strings live in the <script id="i18n"> JSON block in index.html (UTF-8).
+  const I18N = (() => {
+    try { return JSON.parse(document.getElementById("i18n").textContent); }
+    catch (_) { return { en: {}, fr: {} }; }
+  })();
+  const LANG = (navigator.language || "en").toLowerCase().startsWith("fr") ? "fr" : "en";
+  const T = Object.assign({}, I18N.en, I18N[LANG]); // English fills any missing key
+  document.documentElement.lang = LANG;
+  document.querySelectorAll("[data-i18n]").forEach((n) => {
+    const k = n.getAttribute("data-i18n");
+    if (T[k] != null) n.textContent = T[k];
+  });
+
   const app = document.querySelector(".app");
   const $ = (id) => document.getElementById(id);
   const el = {
@@ -21,17 +35,17 @@
   function render(d) {
     if (!d.connected) {
       el.connDot.className = "dot off";
-      el.connText.textContent = d.port ? "lost " + d.port : "no sensor";
+      el.connText.textContent = d.port ? T.lost + " " + d.port : T.no_sensor;
       setState("offline");
-      el.banner.textContent = "SENSOR OFFLINE"; el.banner.classList.remove("hidden");
+      el.banner.textContent = T.sensor_offline; el.banner.classList.remove("hidden");
     } else if (d.stale) {
       el.connDot.className = "dot stale";
-      el.connText.textContent = "weak / no target";
+      el.connText.textContent = T.weak;
       setState("stale");
-      el.banner.textContent = "NO SIGNAL"; el.banner.classList.remove("hidden");
+      el.banner.textContent = T.no_signal; el.banner.classList.remove("hidden");
     } else {
       el.connDot.className = "dot ok";
-      el.connText.textContent = d.port || "connected";
+      el.connText.textContent = d.port || T.connected;
       setState("live");
       el.banner.classList.add("hidden");
     }
@@ -58,7 +72,7 @@
     es.onmessage = (e) => { try { render(JSON.parse(e.data)); } catch (_) {} };
     es.onerror = () => {
       el.connDot.className = "dot off";
-      el.connText.textContent = "reconnecting…";
+      el.connText.textContent = T.reconnecting;
       setState("offline");
       if (rebooting) sawDrop = true;
     };
@@ -67,6 +81,12 @@
 
   // ---- controls ----
   const post = (path) => fetch(path, { method: "POST" }).catch(() => {});
+  // Power actions: surface an explicit backend failure. A dropped connection is
+  // expected on success, so treat that as "in progress" rather than an error.
+  const postPower = (path) =>
+    fetch(path, { method: "POST" })
+      .then((r) => (r.ok ? { ok: true } : r.json().catch(() => ({})).then((j) => ({ ok: false, error: j.error }))))
+      .catch(() => ({ ok: true }));
   const flash = (btn) => { btn.classList.add("flash"); setTimeout(() => btn.classList.remove("flash"), 180); };
   const bind = (id, fn) => $(id).addEventListener("click", (e) => fn(e.currentTarget));
 
@@ -75,18 +95,22 @@
   bind("btn-invert", (b) => { flash(b); post("/api/invert"); });
 
   const showOverlay = (msg) => { el.overlayMsg.textContent = msg; el.overlay.classList.remove("hidden"); };
+  const failOverlay = (msg, err) => {
+    showOverlay(err ? msg + "\n" + err : msg);
+    setTimeout(() => el.overlay.classList.add("hidden"), 6000);
+  };
 
-  bind("btn-off", () => {
-    if (confirm("Power OFF the Raspberry Pi?\n\nThe readout will go offline until someone powers it back on.")) {
-      post("/api/poweroff");
-      showOverlay("Powering off…\nWait for the Pi's LED to stop blinking, then it's safe to unplug.");
-    }
+  bind("btn-off", async () => {
+    if (!confirm(T.confirm_off)) return;
+    showOverlay(T.overlay_off);
+    const res = await postPower("/api/poweroff");
+    if (res.ok === false) failOverlay(T.off_failed, res.error);
   });
-  bind("btn-reboot", () => {
-    if (confirm("Reboot the Raspberry Pi?\n\nThe readout drops for ~30 s, then reconnects on its own.")) {
-      rebooting = true; sawDrop = false;
-      post("/api/reboot");
-      showOverlay("Rebooting…\nThis page will reconnect automatically.");
-    }
+  bind("btn-reboot", async () => {
+    if (!confirm(T.confirm_reboot)) return;
+    rebooting = true; sawDrop = false;
+    showOverlay(T.overlay_reboot);
+    const res = await postPower("/api/reboot");
+    if (res.ok === false) { rebooting = false; failOverlay(T.reboot_failed, res.error); }
   });
 })();
