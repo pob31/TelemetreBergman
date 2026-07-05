@@ -6,7 +6,15 @@
     try { return JSON.parse(document.getElementById("i18n").textContent); }
     catch (_) { return { en: {}, fr: {} }; }
   })();
-  const LANG = (navigator.language || "en").toLowerCase().startsWith("fr") ? "fr" : "en";
+  // Language: ?lang=fr|en forces + remembers a choice; otherwise the device's
+  // preferred language decides (French => fr, anything else => en).
+  const pref = (() => {
+    const q = new URLSearchParams(location.search).get("lang");
+    if (q) { try { localStorage.setItem("tb_lang", q); } catch (_) {} return q; }
+    try { const s = localStorage.getItem("tb_lang"); if (s) return s; } catch (_) {}
+    return (navigator.languages && navigator.languages[0]) || navigator.language || "en";
+  })();
+  const LANG = String(pref).toLowerCase().startsWith("fr") ? "fr" : "en";
   const T = Object.assign({}, I18N.en, I18N[LANG]); // English fills any missing key
   document.documentElement.lang = LANG;
   document.querySelectorAll("[data-i18n]").forEach((n) => {

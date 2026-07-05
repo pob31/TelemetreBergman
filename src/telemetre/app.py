@@ -120,5 +120,16 @@ async def stream(request: Request):
     )
 
 
-# Static SPA at root. Mounted last so /api/* and /stream take precedence.
-app.mount("/", StaticFiles(directory=str(WEB_DIR), html=True), name="web")
+# Static SPA at root, served with revalidation so UI updates (e.g. the French
+# strings) land on the next refresh instead of Safari serving a stale cached
+# bundle. `no-cache` still allows 304s via etag, so it stays cheap. Mounted last
+# so /api/* and /stream take precedence. (Subclass, not middleware — middleware
+# would wrap and risk buffering the /stream SSE response.)
+class _RevalidatingStatic(StaticFiles):
+    async def get_response(self, path, scope):
+        resp = await super().get_response(path, scope)
+        resp.headers["Cache-Control"] = "no-cache"
+        return resp
+
+
+app.mount("/", _RevalidatingStatic(directory=str(WEB_DIR), html=True), name="web")
