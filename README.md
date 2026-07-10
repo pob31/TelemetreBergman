@@ -112,7 +112,7 @@ overlay loaded):
 src/telemetre/   frames.py filters.py serial_reader.py state.py osc_out.py config.py app.py
 web/             index.html app.js style.css   (EventSource UI)
 systemd/         telemetre.service
-scripts/         install.sh deploy.sh detect_serial.py
+scripts/         install.sh deploy.sh detect_serial.py net_sniff.py
 tests/           test_frames.py test_filters.py
 documentation/   TF02-Pro datasheets/manual
 ```
@@ -129,3 +129,52 @@ documentation/   TF02-Pro datasheets/manual
 5. **Reader wedged / web stuck "connecting", `ps` shows python in `D` state?**
    That's the phantom-port dead-lock — the **SPI** overlay (`sc16is75x-spi`) is
    loaded against this **I²C** board. Disable it, keep only `sc16is752-i2c`, reboot.
+
+---
+
+## Troubleshooting — one device can't load the page (but others can)
+
+**Symptom.** One phone/tablet suddenly cannot load the readout while other
+devices still can. The same device *does* reach the router's own admin page.
+Rebooting the device, the router **and the Pi** changes nothing. Giving the
+device a new MAC (hence a new DHCP IP) fixes it instantly, and the old IP starts
+working again by itself after a while.
+
+**This is not the Pi.** Rule it out in two commands:
+
+```bash
+sudo nft list ruleset; sudo iptables -L -n      # empty: the Pi blocks nobody
+journalctl -u telemetre -b | grep 'GET / HTTP'  # blocked device never appears
+```
+If the device's requests never reach the access log, its packets are not arriving
+at all — nothing the Pi runs can cause that.
+
+**Prove where the packets die.** `tcpdump` is usually absent (and the Pi may have
+no internet to install it), so use the bundled stdlib sniffer:
+
+```bash
+sudo systemd-run --unit=tb-sniff python3 ~/TelemetreBergman/scripts/net_sniff.py
+journalctl -u tb-sniff -f      # now reproduce the fault on the device
+sudo systemctl stop tb-sniff   # transient unit; also clears on reboot
+```
+
+Read it while the device is blocked:
+
+| What the Pi sees from that device | Where the fault is |
+|---|---|
+| **nothing at all** | the switch/AP never forwards its frames — stale bridge-host entry, client isolation, or a VLAN mismatch |
+| `ARP who-has <pi-ip>` arrives, Pi answers `is-at`, device keeps asking | the **ARP replies** aren't getting back to it |
+| `SYN` arrives, Pi sends `SYN,ACK`, no final `ACK` | the **return path** is broken |
+
+All three point at the LAN. The signature above — keyed to a MAC/IP, surviving
+every reboot, healing on a timeout — is a **stale layer-2 forwarding entry**.
+On a MikroTik, inspect:
+
+```
+/ip arp print                    # stale, duplicate or invalid entry for that IP?
+/interface bridge host print     # is that MAC learned on the wrong port?
+/interface bridge print          # try hw=no: hardware offload is a known
+                                 # source of stale L2 entries
+```
+
+Also worth giving the Pi a **fixed DHCP lease** so the readout URL stops moving.
