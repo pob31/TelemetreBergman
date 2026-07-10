@@ -98,9 +98,9 @@
   const flash = (btn) => { btn.classList.add("flash"); setTimeout(() => btn.classList.remove("flash"), 180); };
   const bind = (id, fn) => $(id).addEventListener("click", (e) => fn(e.currentTarget));
 
-  bind("btn-zero", (b) => { flash(b); post("/api/tare"); });
-  bind("btn-clear", (b) => { flash(b); post("/api/clear_zero"); });
-  bind("btn-invert", (b) => { flash(b); post("/api/invert"); });
+  bind("btn-zero", (b) => { if (!confirm(T.confirm_zero)) return; flash(b); post("/api/tare"); });
+  bind("btn-clear", (b) => { if (!confirm(T.confirm_clear)) return; flash(b); post("/api/clear_zero"); });
+  bind("btn-invert", (b) => { if (!confirm(T.confirm_invert)) return; flash(b); post("/api/invert"); });
 
   const showOverlay = (msg) => { el.overlayMsg.textContent = msg; el.overlay.classList.remove("hidden"); };
   const failOverlay = (msg, err) => {
