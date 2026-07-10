@@ -134,13 +134,37 @@ documentation/   TF02-Pro datasheets/manual
 
 ## Troubleshooting — one device can't load the page (but others can)
 
-**Symptom.** One phone/tablet suddenly cannot load the readout while other
-devices still can. The same device *does* reach the router's own admin page.
-Rebooting the device, the router **and the Pi** changes nothing. Giving the
-device a new MAC (hence a new DHCP IP) fixes it instantly, and the old IP starts
-working again by itself after a while.
+**Symptom.** One phone suddenly cannot load the readout while other devices can.
+Every browser on it fails. Rebooting the phone, the router **and the Pi** changes
+nothing. It still reaches the router's own admin page.
 
-**This is not the Pi.** Rule it out in two commands:
+### The usual cause: the phone is on Wi-Fi *and* mobile data
+
+The stage network has **no internet**. Phones notice ("Wi-Fi connected, no
+internet"), quietly demote it and make **mobile data the default network** — so
+requests for the Pi's private address (e.g. `172.22.0.254`) leave over 5G,
+toward the internet, where that address goes nowhere. The first load often
+succeeds; later ones don't. It looks exactly as if the Pi were blocking you.
+
+Tell-tales that this is what you're hitting:
+- turning **mobile data off** on the phone fixes it instantly
+- a device with **no cellular radio** (most tablets) never shows the problem
+- the phone still reaches the **router's** admin page (that address stays on-link)
+- `ping deb.debian.org` fails **on the Pi** — confirming the network has no internet
+
+Fixes, best first:
+1. **Give the network real internet access.** Phones then keep Wi-Fi as their
+   default network — and `apt` starts working on the Pi too.
+2. Turn **mobile data off** on the phone while using the readout.
+3. Android: disable *Adaptive connectivity* / *Switch to mobile data
+   automatically*; when prompted "Wi-Fi has no internet access", stay connected.
+
+> Changing the phone's MAC/IP can appear to fix this. It's a coincidence of
+> re-running DHCP and resetting the phone's routing, not a cure — don't chase it.
+
+### If that isn't it: are the packets even arriving?
+
+**Rule the Pi out in two commands:**
 
 ```bash
 sudo nft list ruleset; sudo iptables -L -n      # empty: the Pi blocks nobody
@@ -166,15 +190,17 @@ Read it while the device is blocked:
 | `ARP who-has <pi-ip>` arrives, Pi answers `is-at`, device keeps asking | the **ARP replies** aren't getting back to it |
 | `SYN` arrives, Pi sends `SYN,ACK`, no final `ACK` | the **return path** is broken |
 
-All three point at the LAN. The signature above — keyed to a MAC/IP, surviving
-every reboot, healing on a timeout — is a **stale layer-2 forwarding entry**.
-On a MikroTik, inspect:
+All three mean the packets die on the LAN, not on the Pi. Note the first row is
+also what you see when the device sent them out of a **different interface**
+entirely (the mobile-data case above) — check that first, it's far more common.
+
+If the frames really are being dropped on the network, on a MikroTik inspect:
 
 ```
 /ip arp print                    # stale, duplicate or invalid entry for that IP?
 /interface bridge host print     # is that MAC learned on the wrong port?
-/interface bridge print          # try hw=no: hardware offload is a known
-                                 # source of stale L2 entries
+/interface bridge print          # try hw=no: hardware offload can leave stale
+                                 # L2 entries
 ```
 
 Also worth giving the Pi a **fixed DHCP lease** so the readout URL stops moving.
