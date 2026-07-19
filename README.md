@@ -12,6 +12,14 @@ so the stage manager can nudge the cart onto a mark in real time.
   from the web page** (no unplugging).
 - **OSC output** provisioned (disabled by default) for a future show-control feed.
 
+## Companion app — Cadreur (design stage)
+
+**Cadreur Bergman** is the planned Mac-side companion: it consumes this readout's
+SSE stream and continuously rescales/repositions **Millumin** layers so front- and
+rear-projected video stays fitted to the travelling scrim (lens memories, per-look
+calibration points, capture-from-Millumin workflow). Implementation-ready spec:
+[`documentation/PRD-cadreur.md`](documentation/PRD-cadreur.md).
+
 ---
 
 ## Hardware
@@ -114,7 +122,7 @@ web/             index.html app.js style.css   (EventSource UI)
 systemd/         telemetre.service
 scripts/         install.sh deploy.sh detect_serial.py net_sniff.py
 tests/           test_frames.py test_filters.py
-documentation/   TF02-Pro datasheets/manual
+documentation/   TF02-Pro datasheets/manual · PRD-cadreur.md (Mac companion app spec)
 ```
 
 ## Troubleshooting — "no data"
