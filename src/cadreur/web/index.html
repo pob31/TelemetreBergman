@@ -17,9 +17,9 @@
           <span class="status-label">Pi</span> <span id="pi-text">…</span></div>
         <div class="status"><span id="mil-dot" class="dot"></span>
           <span class="status-label">Millumin</span> <span id="mil-text">—</span>
-          <button id="btn-test" class="btn btn-mini" data-i18n="test_millumin">Test</button></div>
+          <button id="btn-test" class="btn btn-mini" data-i18n="test_millumin" data-help="help_test">Test</button></div>
       </div>
-      <button id="btn-arm" class="btn arm off"><span data-i18n="arm_off">OFF</span></button>
+      <button id="btn-arm" class="btn arm off" data-help="help_arm"><span data-i18n="arm_off">OFF</span></button>
     </header>
 
     <div id="banner" class="banner hidden"></div>
@@ -27,11 +27,11 @@
     <section class="distance card">
       <div class="dist-row">
         <div class="dist-main">
-          <label data-i18n="abs_distance">ABS DISTANCE</label>
+          <label data-i18n="abs_distance" data-help="help_abs">ABS DISTANCE</label>
           <div><span id="abs-m" class="dist-value">—.———</span><span class="unit">m</span></div>
         </div>
         <div class="dist-side">
-          <label data-i18n="stage_pos">stage position (crew ref)</label>
+          <label data-i18n="stage_pos" data-help="help_stage">stage position (crew ref)</label>
           <div><span id="stage-m" class="dist-side-value">—.———</span><span class="unit">m</span></div>
         </div>
       </div>
@@ -44,7 +44,7 @@
     </section>
 
     <section class="lookbar card">
-      <label data-i18n="look">LOOK</label>
+      <label data-i18n="look" data-help="help_look">LOOK</label>
       <select id="look-select"></select>
       <div class="lookbtns">
         <button id="look-new" class="btn btn-mini" data-i18n="look_new">+ new</button>
@@ -58,7 +58,7 @@
       <!-- The two beamer panels share markup; app.js drives them by data-beamer. -->
       <div class="panel card" data-beamer="front">
         <div class="panel-head">
-          <span class="panel-title">FRONT</span>
+          <span class="panel-title" data-help="help_front">FRONT</span>
           <span class="layer-wrap"><span data-i18n="layer">layer:</span>
             <button class="layer-name btn-link">—</button></span>
           <label class="enable"><input type="checkbox" class="enable-box" />
@@ -73,13 +73,13 @@
         <button class="btn btn-primary capture" data-i18n="capture">⊕ Capture point</button>
         <table class="points">
           <thead><tr>
-            <th>d (m)</th><th data-i18n="th_scale">scale</th><th>x</th><th>y</th><th></th>
+            <th data-help="help_points">d (m)</th><th data-i18n="th_scale">scale</th><th>x</th><th>y</th><th></th>
           </tr></thead>
           <tbody></tbody>
         </table>
         <button class="btn btn-mini add-manual" data-i18n="add_manual">+ manual point</button>
         <div class="trim">
-          <span data-i18n="trim">trim</span>
+          <span data-i18n="trim" data-help="help_trim">trim</span>
           <span class="trim-group">scale <button class="btn-nudge" data-trim="scale_mul" data-step="-0.01">−−</button><button class="btn-nudge" data-trim="scale_mul" data-step="-0.001">−</button><span class="trim-val trim-scale">×1.000</span><button class="btn-nudge" data-trim="scale_mul" data-step="0.001">+</button><button class="btn-nudge" data-trim="scale_mul" data-step="0.01">++</button></span>
           <span class="trim-group">x <button class="btn-nudge" data-trim="dx_px" data-step="-10">−−</button><button class="btn-nudge" data-trim="dx_px" data-step="-1">−</button><span class="trim-val trim-x">+0</span><button class="btn-nudge" data-trim="dx_px" data-step="1">+</button><button class="btn-nudge" data-trim="dx_px" data-step="10">++</button></span>
           <span class="trim-group">y <button class="btn-nudge" data-trim="dy_px" data-step="-10">−−</button><button class="btn-nudge" data-trim="dy_px" data-step="-1">−</button><span class="trim-val trim-y">+0</span><button class="btn-nudge" data-trim="dy_px" data-step="1">+</button><button class="btn-nudge" data-trim="dy_px" data-step="10">++</button></span>
@@ -89,7 +89,7 @@
       </div>
       <div class="panel card" data-beamer="rear">
         <div class="panel-head">
-          <span class="panel-title">REAR</span>
+          <span class="panel-title" data-help="help_rear">REAR</span>
           <span class="layer-wrap"><span data-i18n="layer">layer:</span>
             <button class="layer-name btn-link">—</button></span>
           <label class="enable"><input type="checkbox" class="enable-box" />
@@ -104,13 +104,13 @@
         <button class="btn btn-primary capture" data-i18n="capture">⊕ Capture point</button>
         <table class="points">
           <thead><tr>
-            <th>d (m)</th><th data-i18n="th_scale">scale</th><th>x</th><th>y</th><th></th>
+            <th data-help="help_points">d (m)</th><th data-i18n="th_scale">scale</th><th>x</th><th>y</th><th></th>
           </tr></thead>
           <tbody></tbody>
         </table>
         <button class="btn btn-mini add-manual" data-i18n="add_manual">+ manual point</button>
         <div class="trim">
-          <span data-i18n="trim">trim</span>
+          <span data-i18n="trim" data-help="help_trim">trim</span>
           <span class="trim-group">scale <button class="btn-nudge" data-trim="scale_mul" data-step="-0.01">−−</button><button class="btn-nudge" data-trim="scale_mul" data-step="-0.001">−</button><span class="trim-val trim-scale">×1.000</span><button class="btn-nudge" data-trim="scale_mul" data-step="0.001">+</button><button class="btn-nudge" data-trim="scale_mul" data-step="0.01">++</button></span>
           <span class="trim-group">x <button class="btn-nudge" data-trim="dx_px" data-step="-10">−−</button><button class="btn-nudge" data-trim="dx_px" data-step="-1">−</button><span class="trim-val trim-x">+0</span><button class="btn-nudge" data-trim="dx_px" data-step="1">+</button><button class="btn-nudge" data-trim="dx_px" data-step="10">++</button></span>
           <span class="trim-group">y <button class="btn-nudge" data-trim="dy_px" data-step="-10">−−</button><button class="btn-nudge" data-trim="dy_px" data-step="-1">−</button><span class="trim-val trim-y">+0</span><button class="btn-nudge" data-trim="dy_px" data-step="1">+</button><button class="btn-nudge" data-trim="dy_px" data-step="10">++</button></span>
@@ -121,7 +121,7 @@
     </section>
 
     <footer class="showbar card">
-      <div class="showfile">
+      <div class="showfile" data-help="help_show">
         <span id="show-dot" class="dot"></span>
         <span id="show-name">—</span>
         <span id="show-file" class="muted"></span>
@@ -219,7 +219,23 @@
       "sm_deadband_px": "dead-band px",
       "sm_slew_scale_per_s": "slew scale /s",
       "sm_slew_px_per_s": "slew px /s",
-      "sm_refresh_hz": "refresh (Hz)"
+      "sm_refresh_hz": "refresh (Hz)",
+      "help_arm": "Master switch|Only while ARMED does Cadreur send OSC to Millumin. Arming takes effect immediately (no glide). Disarming goes completely silent and leaves the layers where they are. The app always starts disarmed.",
+      "help_abs": "Absolute distance|Sensor→scrim distance, independent of the Pi's zero and direction — Set Zero on the Pi never invalidates a calibration.\nThe bar shows the calibrated range: ◆ cart, green ticks = front points, amber = rear. Outside the range the output holds the end values (clamped).",
+      "help_stage": "Stage position|The Pi readout's tared position — the same number the stage crew sees. Display only.",
+      "help_look": "Looks|A named projection setup: target layer per beamer + its calibration points. Only the active look sends; switching glides smoothly to the new geometry.",
+      "help_front": "Front beamer|Workflow: 1) check the lens-memory chip matches the projector · 2) Calibrate mode — output pauses · 3) fit the frame with Millumin's own tools · 4) Capture point · repeat at 2–3 scrim positions (add more where it curves) · 5) exit Calibrate mode.\nChips: each lens memory has its own calibration. A hollow chip has no points in this look — the beamer then stays silent rather than borrow another memory's geometry.",
+      "help_rear": "Rear beamer|Workflow: 1) Calibrate mode — output pauses · 2) fit the frame with Millumin's own tools · 3) Capture point · repeat at 2–3 scrim positions (add more where it curves) · 4) exit Calibrate mode.\nThe rear beamer has a single calibration per look (no lens memories).",
+      "help_points": "Calibration points|Cadreur interpolates linearly between these points and holds the end values beyond them. ✎ edit · ↻ re-capture at the current distance · 🗑 delete. Capturing within 3 cm of an existing point replaces it.",
+      "help_trim": "Trim|Live correction applied on top of the interpolation: scale multiplies, x/y add pixels. It belongs to this calibration set only. \"bake\" folds it into every point, then resets.",
+      "help_show": "Show file|One JSON file = one show: looks, points, trims, smoothing. Autosaves a few seconds after every change; a dated backup is kept at each app start (last 10). The ARM state is never saved — the app always starts disarmed.",
+      "help_test": "Test Millumin|One feedback round-trip with the latency. Needs, in Millumin: Device manager (⌘K) → OSC → API feedback enabled → this Mac, port 8000.",
+      "help_sm_ema_tau_s": "EMA tau|Distance smoothing time constant (seconds). Bigger = calmer image but more lag: lag ≈ tau × speed — about 3 mm at 4 cm/min with 5 s.",
+      "help_sm_deadband_scale": "Dead-band (scale)|Scale is not resent until it moved at least this much. The periodic refresh still resends regardless.",
+      "help_sm_deadband_px": "Dead-band (px)|Position is not resent until it moved at least this many pixels. The periodic refresh still resends regardless.",
+      "help_sm_slew_scale_per_s": "Slew (scale)|Maximum scale change per second. Turns any jump (look switch, point edits, recovery) into a short glide — far above normal tracking speed.",
+      "help_sm_slew_px_per_s": "Slew (px)|Maximum position change per second, in pixels. Same glide role as the scale slew.",
+      "help_sm_refresh_hz": "Refresh|Absolute values are resent at this rate even at rest, so a restarted Millumin recovers its geometry within about a second."
     },
     "fr": {
       "arm_off": "OFF", "arm_on": "ARMÉ",
@@ -282,7 +298,23 @@
       "sm_deadband_px": "zone morte px",
       "sm_slew_scale_per_s": "rampe échelle /s",
       "sm_slew_px_per_s": "rampe px /s",
-      "sm_refresh_hz": "rafraîchissement (Hz)"
+      "sm_refresh_hz": "rafraîchissement (Hz)",
+      "help_arm": "Interrupteur général|Cadreur n'envoie de l'OSC à Millumin que lorsqu'il est ARMÉ. L'armement prend effet immédiatement (sans glissement). Le désarmement coupe tout envoi et laisse les calques où ils sont. L'appli démarre toujours désarmée.",
+      "help_abs": "Distance absolue|Distance capteur→tulle, indépendante du zéro et du sens du Pi — une « Mise à zéro » sur le Pi n'invalide jamais une calibration.\nLa barre montre la plage calibrée : ◆ chariot, traits verts = points face, ambre = arrière. Hors plage, la sortie garde les valeurs extrêmes (bornée).",
+      "help_stage": "Position plateau|La position tarée du Pi — le même chiffre que voit l'équipe plateau. Affichage seulement.",
+      "help_look": "Looks|Une configuration de projection nommée : calque cible par projecteur + ses points de calibration. Seul le look actif envoie ; le changement glisse en douceur vers la nouvelle géométrie.",
+      "help_front": "Projecteur face|Méthode : 1) vérifier que la pastille mémoire correspond au projecteur · 2) Mode calibration — sortie en pause · 3) cadrer l'image avec les outils de Millumin · 4) Capturer un point · répéter à 2–3 positions du tulle (davantage là où ça courbe) · 5) quitter la calibration.\nPastilles : chaque mémoire d'objectif a sa propre calibration. Une pastille creuse n'a aucun point dans ce look — le projecteur reste alors muet plutôt que d'emprunter la géométrie d'une autre mémoire.",
+      "help_rear": "Projecteur arrière|Méthode : 1) Mode calibration — sortie en pause · 2) cadrer l'image avec les outils de Millumin · 3) Capturer un point · répéter à 2–3 positions du tulle (davantage là où ça courbe) · 4) quitter la calibration.\nLe projecteur arrière a une seule calibration par look (pas de mémoires d'objectif).",
+      "help_points": "Points de calibration|Cadreur interpole linéairement entre ces points et garde les valeurs extrêmes au-delà. ✎ modifier · ↻ re-capturer à la distance courante · 🗑 supprimer. Une capture à moins de 3 cm d'un point existant le remplace.",
+      "help_trim": "Trim|Correction en direct appliquée après l'interpolation : l'échelle multiplie, x/y ajoutent des pixels. Propre à ce jeu de calibration. « figer » l'incorpore dans chaque point, puis le remet à zéro.",
+      "help_show": "Fichier spectacle|Un fichier JSON = un spectacle : looks, points, trims, lissage. Enregistrement auto quelques secondes après chaque modification ; une sauvegarde datée est gardée à chaque démarrage (10 dernières). L'état ARMÉ n'est jamais enregistré — l'appli démarre toujours désarmée.",
+      "help_test": "Test Millumin|Un aller-retour de feedback avec la latence. Nécessite, dans Millumin : Device manager (⌘K) → OSC → API feedback activé → ce Mac, port 8000.",
+      "help_sm_ema_tau_s": "EMA tau|Constante de temps du lissage de distance (secondes). Plus grand = image plus calme mais plus de retard : retard ≈ tau × vitesse — environ 3 mm à 4 cm/min avec 5 s.",
+      "help_sm_deadband_scale": "Zone morte (échelle)|L'échelle n'est renvoyée que si elle a bougé d'au moins cette valeur. Le rafraîchissement périodique renvoie quand même.",
+      "help_sm_deadband_px": "Zone morte (px)|La position n'est renvoyée que si elle a bougé d'au moins ce nombre de pixels. Le rafraîchissement périodique renvoie quand même.",
+      "help_sm_slew_scale_per_s": "Rampe (échelle)|Variation maximale d'échelle par seconde. Transforme tout saut (changement de look, édition de points, reprise) en un court glissement — bien au-dessus de la vitesse de suivi normale.",
+      "help_sm_slew_px_per_s": "Rampe (px)|Variation maximale de position par seconde, en pixels. Même rôle de glissement que la rampe d'échelle.",
+      "help_sm_refresh_hz": "Rafraîchissement|Les valeurs absolues sont renvoyées à cette cadence même à l'arrêt : un Millumin relancé retrouve sa géométrie en une seconde environ."
     }
   }
   </script>

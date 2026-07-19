@@ -14,9 +14,13 @@ dependencies = [
     "python-osc>=1.8",
 ]
 
+[project.optional-dependencies]
+gui = ["pywebview>=5.0"]
+
 [project.scripts]
 telemetre = "telemetre.__main__:main"
 cadreur = "cadreur.__main__:main"
+cadreur-gui = "cadreur.gui:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

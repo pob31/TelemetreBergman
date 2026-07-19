@@ -21,6 +21,51 @@
   const sub = (key, vars) =>
     (T[key] || key).replace(/\{(\w+)\}/g, (_, k) => (vars && vars[k] != null ? vars[k] : "?"));
 
+  // ---- help cards: tap "?" to open, tap anywhere else to close ----
+  // Strings live in the i18n block as "Title|Body". Tap-based (not hover):
+  // this page is also the tablet control surface.
+  const helpCard = document.createElement("div");
+  helpCard.className = "help-card hidden";
+  helpCard.append(document.createElement("div"), document.createElement("div"));
+  helpCard.firstElementChild.className = "help-card-title";
+  helpCard.lastElementChild.className = "help-card-body";
+  document.body.appendChild(helpCard);
+  let helpFor = null;
+  const hideHelp = () => { helpCard.classList.add("hidden"); helpFor = null; };
+  function showHelp(btn, key) {
+    const raw = T[key] || key;
+    const bar = raw.indexOf("|");
+    helpCard.firstElementChild.textContent = bar < 0 ? "" : raw.slice(0, bar);
+    helpCard.lastElementChild.textContent = bar < 0 ? raw : raw.slice(bar + 1);
+    helpCard.classList.remove("hidden");
+    const r = btn.getBoundingClientRect();
+    const left = Math.max(10, Math.min(r.left, window.innerWidth - helpCard.offsetWidth - 10));
+    let top = r.bottom + 8;
+    if (top + helpCard.offsetHeight > window.innerHeight - 10)
+      top = Math.max(10, r.top - helpCard.offsetHeight - 8);
+    helpCard.style.left = left + "px";
+    helpCard.style.top = top + "px";
+    helpFor = btn;
+  }
+  function addHelp(el, key) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "help-btn";
+    btn.textContent = "?";
+    btn.setAttribute("aria-label", "help");
+    btn.addEventListener("click", (ev) => {
+      ev.preventDefault(); // keep host labels/checkboxes from reacting
+      ev.stopPropagation();
+      if (helpFor === btn) hideHelp(); else showHelp(btn, key);
+    });
+    // Buttons/inputs/labels get the "?" as a sibling; static containers inline.
+    if (["BUTTON", "A", "INPUT", "LABEL"].includes(el.tagName)) el.insertAdjacentElement("afterend", btn);
+    else el.appendChild(btn);
+  }
+  document.querySelectorAll("[data-help]").forEach((el) => addHelp(el, el.dataset.help));
+  document.addEventListener("click", (e) => { if (!e.target.closest(".help-card")) hideHelp(); });
+  window.addEventListener("scroll", hideHelp, true);
+
   const $ = (id) => document.getElementById(id);
   const fmt = (v, n) => (v == null ? "—" : Number(v).toFixed(n));
   const MINUS = "−";
@@ -231,6 +276,7 @@
     });
     smoothInputs[k] = inp;
     l.appendChild(inp);
+    addHelp(inp, "help_sm_" + k);
     $("smoothing").appendChild(l);
   }
 

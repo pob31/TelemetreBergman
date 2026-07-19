@@ -28,6 +28,21 @@ cp cadreur.example.toml cadreur.toml   # set the Pi's URL, ports
 .venv/bin/python -m cadreur            # UI on http://127.0.0.1:8080
 ```
 
+Prefer a desktop window over a browser tab? Install the gui extra and use
+`cadreur-gui` — same server, same UI, in a native macOS window that shuts the
+server down when closed (a browser/tablet can still connect alongside it):
+
+```bash
+.venv/bin/pip install -e '.[gui]'      # adds pywebview
+.venv/bin/cadreur-gui
+```
+
+No command line at show time: `./scripts/make_app.sh` builds a double-clickable
+**Cadreur.app** at the repo root (keep it there; drag it to the Dock). It
+launches `cadreur-gui` and logs to `cadreur_gui.log`. Python: any 3.11+ — the
+plain macOS installer from <https://www.python.org/downloads/> is fine
+(`python3.13` afterwards); needs internet once for the `pip install`.
+
 Dev loop without the rig: `scripts/sim_telemetre.py` (fake Pi SSE) +
 `scripts/millumin_sim.py` (fake Millumin OSC, prints all traffic).
 

@@ -10,6 +10,8 @@ config.toml
 state.json
 cadreur.toml
 cadreur_state.json
+cadreur_gui.log
+Cadreur.app/
 shows/*
 !shows/example-show.json
 
