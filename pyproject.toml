@@ -16,6 +16,10 @@ dependencies = [
 
 [project.scripts]
 telemetre = "telemetre.__main__:main"
+cadreur = "cadreur.__main__:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+cadreur = ["web/*"]

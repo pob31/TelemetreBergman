@@ -1,0 +1,23 @@
+# Cadreur — machine/network settings (PRD §13).
+# Copy to cadreur.toml (gitignored) and adjust for this Mac. Every key has a
+# code default, so a missing file or missing key never blocks startup.
+# Path override: CADREUR_CONFIG env var.
+
+[telemetre]
+url = "http://192.168.1.36"     # cadreur appends /stream
+stale_after_ms = 1500           # Mac-side staleness without any SSE event
+
+[millumin]
+host = "127.0.0.1"
+port = 5000                     # Millumin OSC input
+feedback_port = 8000            # must match Millumin's API-feedback destination
+feedback_timeout_ms = 1500
+
+[web]
+host = "127.0.0.1"              # set 0.0.0.0 to allow a tablet control surface
+port = 8080
+
+[shows]
+dir = "shows"                   # repo-relative
+autosave = true
+autosave_debounce_s = 5

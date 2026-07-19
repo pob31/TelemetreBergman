@@ -1,0 +1,49 @@
+{
+  "app": "cadreur",
+  "version": 1,
+  "meta": {
+    "name": "Bergman création 2026",
+    "saved_at": "2026-07-19T14:03:00Z",
+    "notes": "sensor on flybar 4 — re-rigging it invalidates all points"
+  },
+  "settings": { "active_look": "cinemascope", "active_lens_memory": "M1" },
+  "lens_memories": ["M1", "M2", "M3"],
+  "smoothing": {
+    "ema_tau_s": 5.0,
+    "deadband_scale": 0.0005, "deadband_px": 0.5,
+    "slew_scale_per_s": 0.05, "slew_px_per_s": 50.0,
+    "refresh_hz": 1.0
+  },
+  "looks": [
+    {
+      "id": "cinemascope",
+      "name": "Cinémascope",
+      "beamers": {
+        "front": {
+          "layer": "scope-front",
+          "enabled": true,
+          "calibrations": {
+            "M1": {
+              "interp": "linear",
+              "trim": { "scale_mul": 1.0, "dx_px": 0.0, "dy_px": 0.0 },
+              "points": [
+                { "distance_m": 2.10, "scale": 0.620, "pos_x": 960.0, "pos_y": 540.0 },
+                { "distance_m": 3.20, "scale": 0.535, "pos_x": 960.0, "pos_y": 574.0 },
+                { "distance_m": 4.30, "scale": 0.458, "pos_x": 960.0, "pos_y": 610.0 }
+              ]
+            }
+          }
+        },
+        "rear": {
+          "layer": "scope-rear",
+          "enabled": true,
+          "calibrations": {
+            "default": { "interp": "linear",
+                         "trim": { "scale_mul": 1.0, "dx_px": 0.0, "dy_px": 0.0 },
+                         "points": [] }
+          }
+        }
+      }
+    }
+  ]
+}

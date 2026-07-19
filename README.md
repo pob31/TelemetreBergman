@@ -12,13 +12,24 @@ so the stage manager can nudge the cart onto a mark in real time.
   from the web page** (no unplugging).
 - **OSC output** provisioned (disabled by default) for a future show-control feed.
 
-## Companion app — Cadreur (design stage)
+## Companion app — Cadreur
 
-**Cadreur Bergman** is the planned Mac-side companion: it consumes this readout's
-SSE stream and continuously rescales/repositions **Millumin** layers so front- and
-rear-projected video stays fitted to the travelling scrim (lens memories, per-look
-calibration points, capture-from-Millumin workflow). Implementation-ready spec:
-[`documentation/PRD-cadreur.md`](documentation/PRD-cadreur.md).
+**Cadreur Bergman** is the Mac-side companion (in `src/cadreur/`): it consumes
+this readout's SSE stream and continuously rescales/repositions **Millumin**
+layers so front- and rear-projected video stays fitted to the travelling scrim
+(lens memories, per-look calibration points, capture-from-Millumin workflow).
+Spec: [`documentation/PRD-cadreur.md`](documentation/PRD-cadreur.md).
+
+Run on the show Mac (Python ≥ 3.11):
+
+```bash
+python3 -m venv .venv && .venv/bin/pip install -e .
+cp cadreur.example.toml cadreur.toml   # set the Pi's URL, ports
+.venv/bin/python -m cadreur            # UI on http://127.0.0.1:8080
+```
+
+Dev loop without the rig: `scripts/sim_telemetre.py` (fake Pi SSE) +
+`scripts/millumin_sim.py` (fake Millumin OSC, prints all traffic).
 
 ---
 
@@ -118,10 +129,12 @@ overlay loaded):
 ## Layout
 ```
 src/telemetre/   frames.py filters.py serial_reader.py state.py osc_out.py config.py app.py
+src/cadreur/     Mac companion (Millumin scrim tracker): engine.py millumin.py show.py … + web/
 web/             index.html app.js style.css   (EventSource UI)
 systemd/         telemetre.service
-scripts/         install.sh deploy.sh detect_serial.py net_sniff.py
-tests/           test_frames.py test_filters.py
+scripts/         install.sh deploy.sh detect_serial.py net_sniff.py sim_telemetre.py millumin_sim.py
+tests/           test_frames.py test_filters.py test_interp.py test_smoothing.py test_show.py test_engine.py
+shows/           cadreur show files (gitignored except example-show.json)
 documentation/   TF02-Pro datasheets/manual · PRD-cadreur.md (Mac companion app spec)
 ```
 

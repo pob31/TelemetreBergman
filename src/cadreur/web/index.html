@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b0f14" />
+  <title>Cadreur Bergman</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>&#127916;</text></svg>" />
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="brand">CADREUR <span>Bergman</span></div>
+      <div class="statuses">
+        <div class="status"><span id="pi-dot" class="dot"></span>
+          <span class="status-label">Pi</span> <span id="pi-text">…</span></div>
+        <div class="status"><span id="mil-dot" class="dot"></span>
+          <span class="status-label">Millumin</span> <span id="mil-text">—</span>
+          <button id="btn-test" class="btn btn-mini" data-i18n="test_millumin">Test</button></div>
+      </div>
+      <button id="btn-arm" class="btn arm off"><span data-i18n="arm_off">OFF</span></button>
+    </header>
+
+    <div id="banner" class="banner hidden"></div>
+
+    <section class="distance card">
+      <div class="dist-row">
+        <div class="dist-main">
+          <label data-i18n="abs_distance">ABS DISTANCE</label>
+          <div><span id="abs-m" class="dist-value">—.———</span><span class="unit">m</span></div>
+        </div>
+        <div class="dist-side">
+          <label data-i18n="stage_pos">stage position (crew ref)</label>
+          <div><span id="stage-m" class="dist-side-value">—.———</span><span class="unit">m</span></div>
+        </div>
+      </div>
+      <div class="travel">
+        <div class="travel-ticks front" id="ticks-front"></div>
+        <div class="travel-bar"><div id="cart" class="cart hidden"></div></div>
+        <div class="travel-ticks rear" id="ticks-rear"></div>
+        <div class="travel-range"><span id="range-min">—</span><span id="range-max">—</span></div>
+      </div>
+    </section>
+
+    <section class="lookbar card">
+      <label data-i18n="look">LOOK</label>
+      <select id="look-select"></select>
+      <div class="lookbtns">
+        <button id="look-new" class="btn btn-mini" data-i18n="look_new">+ new</button>
+        <button id="look-dup" class="btn btn-mini" data-i18n="look_dup">duplicate</button>
+        <button id="look-ren" class="btn btn-mini" data-i18n="look_ren">rename</button>
+        <button id="look-del" class="btn btn-mini danger" data-i18n="look_del">delete</button>
+      </div>
+    </section>
+
+    <section class="panels">
+      <!-- The two beamer panels share markup; app.js drives them by data-beamer. -->
+      <div class="panel card" data-beamer="front">
+        <div class="panel-head">
+          <span class="panel-title">FRONT</span>
+          <span class="layer-wrap"><span data-i18n="layer">layer:</span>
+            <button class="layer-name btn-link">—</button></span>
+          <label class="enable"><input type="checkbox" class="enable-box" />
+            <span data-i18n="enable">enable</span></label>
+        </div>
+        <div class="chips" hidden></div>
+        <div class="beamer-status"><span class="status-dot dot"></span><span class="status-text">—</span></div>
+        <div class="live"><span data-i18n="live">live:</span>
+          <span class="live-values">—</span></div>
+        <div class="calflag hidden" data-i18n="calibrating_flag">CALIBRATING — output suspended</div>
+        <button class="btn cal-toggle" data-i18n="calibrate_mode">Calibrate mode</button>
+        <button class="btn btn-primary capture" data-i18n="capture">⊕ Capture point</button>
+        <table class="points">
+          <thead><tr>
+            <th>d (m)</th><th data-i18n="th_scale">scale</th><th>x</th><th>y</th><th></th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+        <button class="btn btn-mini add-manual" data-i18n="add_manual">+ manual point</button>
+        <div class="trim">
+          <span data-i18n="trim">trim</span>
+          <span class="trim-group">scale <button class="btn-nudge" data-trim="scale_mul" data-step="-0.01">−−</button><button class="btn-nudge" data-trim="scale_mul" data-step="-0.001">−</button><span class="trim-val trim-scale">×1.000</span><button class="btn-nudge" data-trim="scale_mul" data-step="0.001">+</button><button class="btn-nudge" data-trim="scale_mul" data-step="0.01">++</button></span>
+          <span class="trim-group">x <button class="btn-nudge" data-trim="dx_px" data-step="-10">−−</button><button class="btn-nudge" data-trim="dx_px" data-step="-1">−</button><span class="trim-val trim-x">+0</span><button class="btn-nudge" data-trim="dx_px" data-step="1">+</button><button class="btn-nudge" data-trim="dx_px" data-step="10">++</button></span>
+          <span class="trim-group">y <button class="btn-nudge" data-trim="dy_px" data-step="-10">−−</button><button class="btn-nudge" data-trim="dy_px" data-step="-1">−</button><span class="trim-val trim-y">+0</span><button class="btn-nudge" data-trim="dy_px" data-step="1">+</button><button class="btn-nudge" data-trim="dy_px" data-step="10">++</button></span>
+          <button class="btn btn-mini trim-bake" data-i18n="bake">bake</button>
+          <button class="btn btn-mini trim-reset" data-i18n="reset">reset</button>
+        </div>
+      </div>
+      <div class="panel card" data-beamer="rear">
+        <div class="panel-head">
+          <span class="panel-title">REAR</span>
+          <span class="layer-wrap"><span data-i18n="layer">layer:</span>
+            <button class="layer-name btn-link">—</button></span>
+          <label class="enable"><input type="checkbox" class="enable-box" />
+            <span data-i18n="enable">enable</span></label>
+        </div>
+        <div class="chips" hidden></div>
+        <div class="beamer-status"><span class="status-dot dot"></span><span class="status-text">—</span></div>
+        <div class="live"><span data-i18n="live">live:</span>
+          <span class="live-values">—</span></div>
+        <div class="calflag hidden" data-i18n="calibrating_flag">CALIBRATING — output suspended</div>
+        <button class="btn cal-toggle" data-i18n="calibrate_mode">Calibrate mode</button>
+        <button class="btn btn-primary capture" data-i18n="capture">⊕ Capture point</button>
+        <table class="points">
+          <thead><tr>
+            <th>d (m)</th><th data-i18n="th_scale">scale</th><th>x</th><th>y</th><th></th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+        <button class="btn btn-mini add-manual" data-i18n="add_manual">+ manual point</button>
+        <div class="trim">
+          <span data-i18n="trim">trim</span>
+          <span class="trim-group">scale <button class="btn-nudge" data-trim="scale_mul" data-step="-0.01">−−</button><button class="btn-nudge" data-trim="scale_mul" data-step="-0.001">−</button><span class="trim-val trim-scale">×1.000</span><button class="btn-nudge" data-trim="scale_mul" data-step="0.001">+</button><button class="btn-nudge" data-trim="scale_mul" data-step="0.01">++</button></span>
+          <span class="trim-group">x <button class="btn-nudge" data-trim="dx_px" data-step="-10">−−</button><button class="btn-nudge" data-trim="dx_px" data-step="-1">−</button><span class="trim-val trim-x">+0</span><button class="btn-nudge" data-trim="dx_px" data-step="1">+</button><button class="btn-nudge" data-trim="dx_px" data-step="10">++</button></span>
+          <span class="trim-group">y <button class="btn-nudge" data-trim="dy_px" data-step="-10">−−</button><button class="btn-nudge" data-trim="dy_px" data-step="-1">−</button><span class="trim-val trim-y">+0</span><button class="btn-nudge" data-trim="dy_px" data-step="1">+</button><button class="btn-nudge" data-trim="dy_px" data-step="10">++</button></span>
+          <button class="btn btn-mini trim-bake" data-i18n="bake">bake</button>
+          <button class="btn btn-mini trim-reset" data-i18n="reset">reset</button>
+        </div>
+      </div>
+    </section>
+
+    <footer class="showbar card">
+      <div class="showfile">
+        <span id="show-dot" class="dot"></span>
+        <span id="show-name">—</span>
+        <span id="show-file" class="muted"></span>
+      </div>
+      <div class="showbtns">
+        <button id="btn-save" class="btn btn-mini" data-i18n="save">Save</button>
+        <button id="btn-saveas" class="btn btn-mini" data-i18n="save_as">Save as</button>
+        <button id="btn-load" class="btn btn-mini" data-i18n="load">Load</button>
+        <a id="btn-export" class="btn btn-mini" href="/api/export" data-i18n="export">Export</a>
+        <button id="btn-import" class="btn btn-mini" data-i18n="import">Import</button>
+        <input type="file" id="import-file" accept=".json,application/json" hidden />
+      </div>
+      <details class="advanced">
+        <summary data-i18n="advanced">Advanced (smoothing)</summary>
+        <div class="smoothing" id="smoothing"></div>
+      </details>
+      <div class="langs"><a href="?lang=en">EN</a> / <a href="?lang=fr">FR</a></div>
+    </footer>
+  </main>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <div id="modal" class="overlay hidden">
+    <div class="modal">
+      <div id="modal-title" class="modal-title"></div>
+      <div id="modal-body" class="modal-body"></div>
+      <div class="modal-actions">
+        <button id="modal-cancel" class="btn" data-i18n="cancel">Cancel</button>
+        <button id="modal-okbtn" class="btn btn-primary" data-i18n="ok">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- UI strings. app.js picks "fr" when the device language is French, else "en". -->
+  <script type="application/json" id="i18n">
+  {
+    "en": {
+      "arm_off": "OFF", "arm_on": "ARMED",
+      "test_millumin": "Test",
+      "abs_distance": "ABS DISTANCE",
+      "stage_pos": "stage position (crew ref)",
+      "look": "LOOK",
+      "look_new": "+ new", "look_dup": "duplicate", "look_ren": "rename", "look_del": "delete",
+      "layer": "layer:", "enable": "enable", "live": "live:",
+      "calibrate_mode": "Calibrate mode", "calibrate_exit": "Exit calibrate",
+      "calibrating_flag": "CALIBRATING — output suspended",
+      "capture": "⊕ Capture point", "add_manual": "+ manual point",
+      "th_scale": "scale",
+      "trim": "trim", "bake": "bake", "reset": "reset",
+      "save": "Save", "save_as": "Save as", "load": "Load",
+      "export": "Export", "import": "Import",
+      "advanced": "Advanced (smoothing)",
+      "cancel": "Cancel", "ok": "OK",
+      "pi_live": "live", "pi_stale": "STALE", "pi_disconnected": "OFFLINE",
+      "banner_stale": "DISTANCE STALE — HOLDING",
+      "banner_disconnected": "TELEMETRE OFFLINE — HOLDING",
+      "banner_app_offline": "CADREUR OFFLINE — reconnecting…",
+      "mil_ok": "ok", "mil_fail": "no reply", "mil_unknown": "not tested",
+      "st_ok": "OK",
+      "st_clamped_low": "clamped low — out of calibrated range",
+      "st_clamped_high": "clamped high — out of calibrated range",
+      "st_disarmed": "disarmed",
+      "st_no_beamer": "no layer in this look",
+      "st_disabled": "disabled",
+      "st_uncalibrated": "Uncalibrated for {mem} in this look",
+      "st_no_points": "no calibration points",
+      "st_calibrating": "calibrating",
+      "st_no_distance": "waiting for distance",
+      "sending": "sending",
+      "toast_captured": "Captured: d={d} m, scale={s}, x={x}, y={y}",
+      "toast_replaced": " (replaced nearby point)",
+      "toast_test_ok": "Millumin OK — {ms} ms ({layer})",
+      "toast_saved": "Saved {file}",
+      "toast_loaded": "Loaded {file}",
+      "toast_imported": "Imported — use Save as to keep it",
+      "toast_error": "Error: {msg}",
+      "modal_capture_title": "No reply from Millumin",
+      "modal_manual_title": "Manual point entry",
+      "modal_edit_title": "Edit point",
+      "modal_load_title": "Load a show",
+      "field_distance": "distance (m)", "field_scale": "scale",
+      "field_x": "x (px)", "field_y": "y (px)",
+      "enter_manually": "Enter values manually",
+      "confirm_delete_point": "Delete this point?",
+      "confirm_recapture": "Re-capture this point?\nDistance {old} m → {new} m",
+      "confirm_bake": "Bake trim into all points of this set?",
+      "confirm_reset_trim": "Reset trim?",
+      "confirm_delete_look": "Delete this look?",
+      "prompt_look_name": "Look name:",
+      "prompt_layer": "Millumin layer name (letters, digits, . _ - only):",
+      "prompt_show_name": "Show file name:",
+      "no_shows": "No show files on the server yet.",
+      "sm_ema_tau_s": "EMA tau (s)",
+      "sm_deadband_scale": "dead-band scale",
+      "sm_deadband_px": "dead-band px",
+      "sm_slew_scale_per_s": "slew scale /s",
+      "sm_slew_px_per_s": "slew px /s",
+      "sm_refresh_hz": "refresh (Hz)"
+    },
+    "fr": {
+      "arm_off": "OFF", "arm_on": "ARMÉ",
+      "test_millumin": "Test",
+      "abs_distance": "DISTANCE ABS",
+      "stage_pos": "position plateau (réf. équipe)",
+      "look": "LOOK",
+      "look_new": "+ nouveau", "look_dup": "dupliquer", "look_ren": "renommer", "look_del": "supprimer",
+      "layer": "calque :", "enable": "actif", "live": "envoi :",
+      "calibrate_mode": "Mode calibration", "calibrate_exit": "Quitter calibration",
+      "calibrating_flag": "CALIBRATION — sortie suspendue",
+      "capture": "⊕ Capturer un point", "add_manual": "+ point manuel",
+      "th_scale": "échelle",
+      "trim": "trim", "bake": "figer", "reset": "raz",
+      "save": "Enregistrer", "save_as": "Enregistrer sous", "load": "Ouvrir",
+      "export": "Exporter", "import": "Importer",
+      "advanced": "Avancé (lissage)",
+      "cancel": "Annuler", "ok": "OK",
+      "pi_live": "direct", "pi_stale": "FIGÉ", "pi_disconnected": "HORS LIGNE",
+      "banner_stale": "DISTANCE FIGÉE — MAINTIEN",
+      "banner_disconnected": "TÉLÉMÈTRE HORS LIGNE — MAINTIEN",
+      "banner_app_offline": "CADREUR HORS LIGNE — reconnexion…",
+      "mil_ok": "ok", "mil_fail": "sans réponse", "mil_unknown": "non testé",
+      "st_ok": "OK",
+      "st_clamped_low": "borné bas — hors plage calibrée",
+      "st_clamped_high": "borné haut — hors plage calibrée",
+      "st_disarmed": "désarmé",
+      "st_no_beamer": "pas de calque dans ce look",
+      "st_disabled": "désactivé",
+      "st_uncalibrated": "Non calibré pour {mem} dans ce look",
+      "st_no_points": "aucun point de calibration",
+      "st_calibrating": "calibration",
+      "st_no_distance": "en attente de distance",
+      "sending": "envoi",
+      "toast_captured": "Capturé : d={d} m, échelle={s}, x={x}, y={y}",
+      "toast_replaced": " (point voisin remplacé)",
+      "toast_test_ok": "Millumin OK — {ms} ms ({layer})",
+      "toast_saved": "Enregistré {file}",
+      "toast_loaded": "Ouvert {file}",
+      "toast_imported": "Importé — « Enregistrer sous » pour le conserver",
+      "toast_error": "Erreur : {msg}",
+      "modal_capture_title": "Pas de réponse de Millumin",
+      "modal_manual_title": "Saisie manuelle d'un point",
+      "modal_edit_title": "Modifier le point",
+      "modal_load_title": "Ouvrir un spectacle",
+      "field_distance": "distance (m)", "field_scale": "échelle",
+      "field_x": "x (px)", "field_y": "y (px)",
+      "enter_manually": "Saisir les valeurs à la main",
+      "confirm_delete_point": "Supprimer ce point ?",
+      "confirm_recapture": "Re-capturer ce point ?\nDistance {old} m → {new} m",
+      "confirm_bake": "Figer le trim dans tous les points de ce jeu ?",
+      "confirm_reset_trim": "Remettre le trim à zéro ?",
+      "confirm_delete_look": "Supprimer ce look ?",
+      "prompt_look_name": "Nom du look :",
+      "prompt_layer": "Nom du calque Millumin (lettres, chiffres, . _ - uniquement) :",
+      "prompt_show_name": "Nom du fichier spectacle :",
+      "no_shows": "Aucun fichier spectacle sur le serveur.",
+      "sm_ema_tau_s": "EMA tau (s)",
+      "sm_deadband_scale": "zone morte échelle",
+      "sm_deadband_px": "zone morte px",
+      "sm_slew_scale_per_s": "rampe échelle /s",
+      "sm_slew_px_per_s": "rampe px /s",
+      "sm_refresh_hz": "rafraîchissement (Hz)"
+    }
+  }
+  </script>
+  <script src="/app.js"></script>
+</body>
+</html>

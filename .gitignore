@@ -8,6 +8,10 @@ venv/
 # Local runtime state / config (per-device, not versioned)
 config.toml
 state.json
+cadreur.toml
+cadreur_state.json
+shows/*
+!shows/example-show.json
 
 # OS / editor
 .DS_Store
