@@ -68,12 +68,23 @@
         <div class="beamer-status"><span class="status-dot dot"></span><span class="status-text">—</span></div>
         <div class="live"><span data-i18n="live">live:</span>
           <span class="live-values">—</span></div>
-        <div class="calflag hidden" data-i18n="calibrating_flag">CALIBRATING — output suspended</div>
+        <div class="calflag hidden" data-i18n="calibrating_flag">CALIBRATION — pilotage direct</div>
+        <div class="manual hidden">
+          <label class="manual-row"><span data-i18n="m_scale">échelle</span>
+            <input type="range" class="drive-scale" min="0" max="1" step="0.001" value="0.5" />
+            <span class="drive-scale-val">0.500</span></label>
+          <label class="manual-row"><span data-i18n="m_vertical">vertical</span>
+            <input type="range" class="drive-vpos" min="0" max="1" step="0.001" value="0.5" />
+            <span class="drive-vpos-val">0.500</span></label>
+          <label class="manual-row"><span data-i18n="m_horizontal">horizontal</span>
+            <input type="range" class="drive-hpos" min="0" max="1" step="0.001" value="0.5" />
+            <span class="drive-hpos-val">0.500</span></label>
+        </div>
         <button class="btn cal-toggle" data-i18n="calibrate_mode">Calibrate mode</button>
         <button class="btn btn-primary capture" data-i18n="capture">⊕ Capture point</button>
         <table class="points">
           <thead><tr>
-            <th data-help="help_points">d (m)</th><th data-i18n="th_scale">scale</th><th>x</th><th>y</th><th></th>
+            <th data-help="help_points">d (m)</th><th data-i18n="th_scale">scale</th><th data-i18n="th_horizontal">hor.</th><th data-i18n="th_vertical">vert.</th><th></th>
           </tr></thead>
           <tbody></tbody>
         </table>
@@ -81,8 +92,8 @@
         <div class="trim">
           <span data-i18n="trim" data-help="help_trim">trim</span>
           <span class="trim-group">scale <button class="btn-nudge" data-trim="scale_mul" data-step="-0.01">−−</button><button class="btn-nudge" data-trim="scale_mul" data-step="-0.001">−</button><span class="trim-val trim-scale">×1.000</span><button class="btn-nudge" data-trim="scale_mul" data-step="0.001">+</button><button class="btn-nudge" data-trim="scale_mul" data-step="0.01">++</button></span>
-          <span class="trim-group">x <button class="btn-nudge" data-trim="dx_px" data-step="-10">−−</button><button class="btn-nudge" data-trim="dx_px" data-step="-1">−</button><span class="trim-val trim-x">+0</span><button class="btn-nudge" data-trim="dx_px" data-step="1">+</button><button class="btn-nudge" data-trim="dx_px" data-step="10">++</button></span>
-          <span class="trim-group">y <button class="btn-nudge" data-trim="dy_px" data-step="-10">−−</button><button class="btn-nudge" data-trim="dy_px" data-step="-1">−</button><span class="trim-val trim-y">+0</span><button class="btn-nudge" data-trim="dy_px" data-step="1">+</button><button class="btn-nudge" data-trim="dy_px" data-step="10">++</button></span>
+          <span class="trim-group"><span data-i18n="m_horizontal">horizontal</span> <button class="btn-nudge" data-trim="dx_px" data-step="-0.01">−−</button><button class="btn-nudge" data-trim="dx_px" data-step="-0.001">−</button><span class="trim-val trim-x">+0.000</span><button class="btn-nudge" data-trim="dx_px" data-step="0.001">+</button><button class="btn-nudge" data-trim="dx_px" data-step="0.01">++</button></span>
+          <span class="trim-group"><span data-i18n="m_vertical">vertical</span> <button class="btn-nudge" data-trim="dy_px" data-step="-0.01">−−</button><button class="btn-nudge" data-trim="dy_px" data-step="-0.001">−</button><span class="trim-val trim-y">+0.000</span><button class="btn-nudge" data-trim="dy_px" data-step="0.001">+</button><button class="btn-nudge" data-trim="dy_px" data-step="0.01">++</button></span>
           <button class="btn btn-mini trim-bake" data-i18n="bake">bake</button>
           <button class="btn btn-mini trim-reset" data-i18n="reset">reset</button>
         </div>
@@ -99,12 +110,23 @@
         <div class="beamer-status"><span class="status-dot dot"></span><span class="status-text">—</span></div>
         <div class="live"><span data-i18n="live">live:</span>
           <span class="live-values">—</span></div>
-        <div class="calflag hidden" data-i18n="calibrating_flag">CALIBRATING — output suspended</div>
+        <div class="calflag hidden" data-i18n="calibrating_flag">CALIBRATION — pilotage direct</div>
+        <div class="manual hidden">
+          <label class="manual-row"><span data-i18n="m_scale">échelle</span>
+            <input type="range" class="drive-scale" min="0" max="1" step="0.001" value="0.5" />
+            <span class="drive-scale-val">0.500</span></label>
+          <label class="manual-row"><span data-i18n="m_vertical">vertical</span>
+            <input type="range" class="drive-vpos" min="0" max="1" step="0.001" value="0.5" />
+            <span class="drive-vpos-val">0.500</span></label>
+          <label class="manual-row"><span data-i18n="m_horizontal">horizontal</span>
+            <input type="range" class="drive-hpos" min="0" max="1" step="0.001" value="0.5" />
+            <span class="drive-hpos-val">0.500</span></label>
+        </div>
         <button class="btn cal-toggle" data-i18n="calibrate_mode">Calibrate mode</button>
         <button class="btn btn-primary capture" data-i18n="capture">⊕ Capture point</button>
         <table class="points">
           <thead><tr>
-            <th data-help="help_points">d (m)</th><th data-i18n="th_scale">scale</th><th>x</th><th>y</th><th></th>
+            <th data-help="help_points">d (m)</th><th data-i18n="th_scale">scale</th><th data-i18n="th_horizontal">hor.</th><th data-i18n="th_vertical">vert.</th><th></th>
           </tr></thead>
           <tbody></tbody>
         </table>
@@ -112,8 +134,8 @@
         <div class="trim">
           <span data-i18n="trim" data-help="help_trim">trim</span>
           <span class="trim-group">scale <button class="btn-nudge" data-trim="scale_mul" data-step="-0.01">−−</button><button class="btn-nudge" data-trim="scale_mul" data-step="-0.001">−</button><span class="trim-val trim-scale">×1.000</span><button class="btn-nudge" data-trim="scale_mul" data-step="0.001">+</button><button class="btn-nudge" data-trim="scale_mul" data-step="0.01">++</button></span>
-          <span class="trim-group">x <button class="btn-nudge" data-trim="dx_px" data-step="-10">−−</button><button class="btn-nudge" data-trim="dx_px" data-step="-1">−</button><span class="trim-val trim-x">+0</span><button class="btn-nudge" data-trim="dx_px" data-step="1">+</button><button class="btn-nudge" data-trim="dx_px" data-step="10">++</button></span>
-          <span class="trim-group">y <button class="btn-nudge" data-trim="dy_px" data-step="-10">−−</button><button class="btn-nudge" data-trim="dy_px" data-step="-1">−</button><span class="trim-val trim-y">+0</span><button class="btn-nudge" data-trim="dy_px" data-step="1">+</button><button class="btn-nudge" data-trim="dy_px" data-step="10">++</button></span>
+          <span class="trim-group"><span data-i18n="m_horizontal">horizontal</span> <button class="btn-nudge" data-trim="dx_px" data-step="-0.01">−−</button><button class="btn-nudge" data-trim="dx_px" data-step="-0.001">−</button><span class="trim-val trim-x">+0.000</span><button class="btn-nudge" data-trim="dx_px" data-step="0.001">+</button><button class="btn-nudge" data-trim="dx_px" data-step="0.01">++</button></span>
+          <span class="trim-group"><span data-i18n="m_vertical">vertical</span> <button class="btn-nudge" data-trim="dy_px" data-step="-0.01">−−</button><button class="btn-nudge" data-trim="dy_px" data-step="-0.001">−</button><span class="trim-val trim-y">+0.000</span><button class="btn-nudge" data-trim="dy_px" data-step="0.001">+</button><button class="btn-nudge" data-trim="dy_px" data-step="0.01">++</button></span>
           <button class="btn btn-mini trim-bake" data-i18n="bake">bake</button>
           <button class="btn btn-mini trim-reset" data-i18n="reset">reset</button>
         </div>
@@ -167,9 +189,10 @@
       "look_new": "+ new", "look_dup": "duplicate", "look_ren": "rename", "look_del": "delete",
       "layer": "layer:", "enable": "enable", "live": "live:",
       "calibrate_mode": "Calibrate mode", "calibrate_exit": "Exit calibrate",
-      "calibrating_flag": "CALIBRATING — output suspended",
+      "calibrating_flag": "CALIBRATING — driving the layer live",
       "capture": "⊕ Capture point", "add_manual": "+ manual point",
-      "th_scale": "scale",
+      "m_scale": "scale", "m_vertical": "vertical", "m_horizontal": "horizontal",
+      "th_scale": "scale", "th_vertical": "vert.", "th_horizontal": "hor.",
       "trim": "trim", "bake": "bake", "reset": "reset",
       "save": "Save", "save_as": "Save as", "load": "Load",
       "export": "Export", "import": "Import",
@@ -191,9 +214,10 @@
       "st_calibrating": "calibrating",
       "st_no_distance": "waiting for distance",
       "sending": "sending",
-      "toast_captured": "Captured: d={d} m, scale={s}, x={x}, y={y}",
+      "toast_captured": "Captured: d={d} m, scale={s}, H={x}, V={y}",
       "toast_replaced": " (replaced nearby point)",
       "toast_test_ok": "Millumin OK — {ms} ms ({layer})",
+      "toast_test_sendonly": "OSC send-only (custom addresses — no feedback)",
       "toast_saved": "Saved {file}",
       "toast_loaded": "Loaded {file}",
       "toast_imported": "Imported — use Save as to keep it",
@@ -202,8 +226,8 @@
       "modal_manual_title": "Manual point entry",
       "modal_edit_title": "Edit point",
       "modal_load_title": "Load a show",
-      "field_distance": "distance (m)", "field_scale": "scale",
-      "field_x": "x (px)", "field_y": "y (px)",
+      "field_distance": "distance (m)", "field_scale": "scale (0–1)",
+      "field_vertical": "vertical (0–1)", "field_horizontal": "horizontal (0–1)",
       "enter_manually": "Enter values manually",
       "confirm_delete_point": "Delete this point?",
       "confirm_recapture": "Re-capture this point?\nDistance {old} m → {new} m",
@@ -224,8 +248,8 @@
       "help_abs": "Absolute distance|Sensor→scrim distance, independent of the Pi's zero and direction — Set Zero on the Pi never invalidates a calibration.\nThe bar shows the calibrated range: ◆ cart, green ticks = front points, amber = rear. Outside the range the output holds the end values (clamped).",
       "help_stage": "Stage position|The Pi readout's tared position — the same number the stage crew sees. Display only.",
       "help_look": "Looks|A named projection setup: target layer per beamer + its calibration points. Only the active look sends; switching glides smoothly to the new geometry.",
-      "help_front": "Front beamer|Workflow: 1) check the lens-memory chip matches the projector · 2) Calibrate mode — output pauses · 3) fit the frame with Millumin's own tools · 4) Capture point · repeat at 2–3 scrim positions (add more where it curves) · 5) exit Calibrate mode.\nChips: each lens memory has its own calibration. A hollow chip has no points in this look — the beamer then stays silent rather than borrow another memory's geometry.",
-      "help_rear": "Rear beamer|Workflow: 1) Calibrate mode — output pauses · 2) fit the frame with Millumin's own tools · 3) Capture point · repeat at 2–3 scrim positions (add more where it curves) · 4) exit Calibrate mode.\nThe rear beamer has a single calibration per look (no lens memories).",
+      "help_front": "Front beamer|Workflow: 1) check the lens-memory chip matches the projector · 2) Calibrate mode — the scale & vertical sliders drive the layer live · 3) set them so the frame fits at this scrim position · 4) Capture point · repeat at 2–3 scrim positions (add more where it curves) · 5) exit Calibrate mode.\nChips: each lens memory has its own calibration. A hollow chip has no points in this look — the beamer then stays silent rather than borrow another memory's geometry.",
+      "help_rear": "Rear beamer|Workflow: 1) Calibrate mode — the scale & vertical sliders drive the layer live · 2) set them so the frame fits at this scrim position · 3) Capture point · repeat at 2–3 scrim positions (add more where it curves) · 4) exit Calibrate mode.\nThe rear beamer has a single calibration per look (no lens memories).",
       "help_points": "Calibration points|Cadreur interpolates linearly between these points and holds the end values beyond them. ✎ edit · ↻ re-capture at the current distance · 🗑 delete. Capturing within 3 cm of an existing point replaces it.",
       "help_trim": "Trim|Live correction applied on top of the interpolation: scale multiplies, x/y add pixels. It belongs to this calibration set only. \"bake\" folds it into every point, then resets.",
       "help_show": "Show file|One JSON file = one show: looks, points, trims, smoothing. Autosaves a few seconds after every change; a dated backup is kept at each app start (last 10). The ARM state is never saved — the app always starts disarmed.",
@@ -246,9 +270,10 @@
       "look_new": "+ nouveau", "look_dup": "dupliquer", "look_ren": "renommer", "look_del": "supprimer",
       "layer": "calque :", "enable": "actif", "live": "envoi :",
       "calibrate_mode": "Mode calibration", "calibrate_exit": "Quitter calibration",
-      "calibrating_flag": "CALIBRATION — sortie suspendue",
+      "calibrating_flag": "CALIBRATION — pilotage direct du calque",
       "capture": "⊕ Capturer un point", "add_manual": "+ point manuel",
-      "th_scale": "échelle",
+      "m_scale": "échelle", "m_vertical": "vertical", "m_horizontal": "horizontal",
+      "th_scale": "échelle", "th_vertical": "vert.", "th_horizontal": "hor.",
       "trim": "trim", "bake": "figer", "reset": "raz",
       "save": "Enregistrer", "save_as": "Enregistrer sous", "load": "Ouvrir",
       "export": "Exporter", "import": "Importer",
@@ -270,9 +295,10 @@
       "st_calibrating": "calibration",
       "st_no_distance": "en attente de distance",
       "sending": "envoi",
-      "toast_captured": "Capturé : d={d} m, échelle={s}, x={x}, y={y}",
+      "toast_captured": "Capturé : d={d} m, échelle={s}, H={x}, V={y}",
       "toast_replaced": " (point voisin remplacé)",
       "toast_test_ok": "Millumin OK — {ms} ms ({layer})",
+      "toast_test_sendonly": "OSC en envoi seul (adresses perso — pas de retour)",
       "toast_saved": "Enregistré {file}",
       "toast_loaded": "Ouvert {file}",
       "toast_imported": "Importé — « Enregistrer sous » pour le conserver",
@@ -281,8 +307,8 @@
       "modal_manual_title": "Saisie manuelle d'un point",
       "modal_edit_title": "Modifier le point",
       "modal_load_title": "Ouvrir un spectacle",
-      "field_distance": "distance (m)", "field_scale": "échelle",
-      "field_x": "x (px)", "field_y": "y (px)",
+      "field_distance": "distance (m)", "field_scale": "échelle (0–1)",
+      "field_vertical": "vertical (0–1)", "field_horizontal": "horizontal (0–1)",
       "enter_manually": "Saisir les valeurs à la main",
       "confirm_delete_point": "Supprimer ce point ?",
       "confirm_recapture": "Re-capturer ce point ?\nDistance {old} m → {new} m",
@@ -303,8 +329,8 @@
       "help_abs": "Distance absolue|Distance capteur→tulle, indépendante du zéro et du sens du Pi — une « Mise à zéro » sur le Pi n'invalide jamais une calibration.\nLa barre montre la plage calibrée : ◆ chariot, traits verts = points face, ambre = arrière. Hors plage, la sortie garde les valeurs extrêmes (bornée).",
       "help_stage": "Position plateau|La position tarée du Pi — le même chiffre que voit l'équipe plateau. Affichage seulement.",
       "help_look": "Looks|Une configuration de projection nommée : calque cible par projecteur + ses points de calibration. Seul le look actif envoie ; le changement glisse en douceur vers la nouvelle géométrie.",
-      "help_front": "Projecteur face|Méthode : 1) vérifier que la pastille mémoire correspond au projecteur · 2) Mode calibration — sortie en pause · 3) cadrer l'image avec les outils de Millumin · 4) Capturer un point · répéter à 2–3 positions du tulle (davantage là où ça courbe) · 5) quitter la calibration.\nPastilles : chaque mémoire d'objectif a sa propre calibration. Une pastille creuse n'a aucun point dans ce look — le projecteur reste alors muet plutôt que d'emprunter la géométrie d'une autre mémoire.",
-      "help_rear": "Projecteur arrière|Méthode : 1) Mode calibration — sortie en pause · 2) cadrer l'image avec les outils de Millumin · 3) Capturer un point · répéter à 2–3 positions du tulle (davantage là où ça courbe) · 4) quitter la calibration.\nLe projecteur arrière a une seule calibration par look (pas de mémoires d'objectif).",
+      "help_front": "Projecteur face|Méthode : 1) vérifier que la pastille mémoire correspond au projecteur · 2) Mode calibration — les curseurs échelle et vertical pilotent le calque en direct · 3) les régler pour que l'image tombe juste à cette position du tulle · 4) Capturer un point · répéter à 2–3 positions du tulle (davantage là où ça courbe) · 5) quitter la calibration.\nPastilles : chaque mémoire d'objectif a sa propre calibration. Une pastille creuse n'a aucun point dans ce look — le projecteur reste alors muet plutôt que d'emprunter la géométrie d'une autre mémoire.",
+      "help_rear": "Projecteur arrière|Méthode : 1) Mode calibration — les curseurs échelle et vertical pilotent le calque en direct · 2) les régler pour que l'image tombe juste à cette position du tulle · 3) Capturer un point · répéter à 2–3 positions du tulle (davantage là où ça courbe) · 4) quitter la calibration.\nLe projecteur arrière a une seule calibration par look (pas de mémoires d'objectif).",
       "help_points": "Points de calibration|Cadreur interpole linéairement entre ces points et garde les valeurs extrêmes au-delà. ✎ modifier · ↻ re-capturer à la distance courante · 🗑 supprimer. Une capture à moins de 3 cm d'un point existant le remplace.",
       "help_trim": "Trim|Correction en direct appliquée après l'interpolation : l'échelle multiplie, x/y ajoutent des pixels. Propre à ce jeu de calibration. « figer » l'incorpore dans chaque point, puis le remet à zéro.",
       "help_show": "Fichier spectacle|Un fichier JSON = un spectacle : looks, points, trims, lissage. Enregistrement auto quelques secondes après chaque modification ; une sauvegarde datée est gardée à chaque démarrage (10 dernières). L'état ARMÉ n'est jamais enregistré — l'appli démarre toujours désarmée.",

@@ -35,7 +35,7 @@ cfg = load_config()
 state = CadreurState(cfg)
 io = MilluminIO(cfg.millumin)
 client = TelemetreClient(cfg, state)
-engine = Engine(cfg, state, io)
+engine = Engine(cfg, state, io, probe_enabled=cfg.millumin.feedback)
 
 WEB_DIR = Path(__file__).resolve().parent / "web"
 
@@ -190,23 +190,27 @@ async def beamer_calibrate(b: str, request: Request):
     if b not in showmod.BEAMER_KEYS:
         return err(f"Unknown beamer '{b}'.")
     on = bool((await body_of(request)).get("on"))
-    was_on = state.calibrate[b]
     state.calibrate[b] = on
-    if was_on and not on:
-        # Re-seed the slew from the layer's actual values (the operator just
-        # moved it); if feedback is unavailable, snap (PRD §8).
-        try:
-            _, beamer = active_beamer(b)
-            layer = beamer["layer"]
-        except showmod.ShowError:
-            layer = None
-
-        async def reseed():
-            res = await asyncio.to_thread(io.query, layer) if layer else None
-            engine.request_reseed(b, res)
-
-        asyncio.create_task(reseed())
+    # "Drive from Cadreur": in calibrate mode the engine sends the manual
+    # values live; on exit it glides from them into interpolated playback (the
+    # engine keeps its slews seeded on the manual value, so no readback needed).
     return {"ok": True, "calibrate": state.calibrate[b]}
+
+
+@app.post("/api/beamer/{b}/manual")
+async def beamer_manual(b: str, request: Request):
+    """Set the live drive values (normalised 0..1) sent while calibrating."""
+    if b not in showmod.BEAMER_KEYS:
+        return err(f"Unknown beamer '{b}'.")
+    d = await body_of(request)
+    m = state.manual[b]
+    for key in ("scale", "pos_v", "pos_h"):
+        if key in d:
+            try:
+                m[key] = min(1.0, max(0.0, float(d[key])))
+            except (TypeError, ValueError):
+                return err(f"Bad value for {key}.")
+    return {"ok": True, "manual": dict(m)}
 
 
 @app.post("/api/beamer/{b}/capture")
@@ -220,25 +224,13 @@ async def beamer_capture(b: str):
     abs_m, _ = state.distance()
     if abs_m is None:
         return err("No distance received yet.")
-    layer = beamer["layer"]
-    if not showmod.valid_layer_name(layer):
-        return err("Set a valid layer name first.")
-    res = await asyncio.to_thread(io.query, layer)
-    if res is None:
-        state.millumin = {"ok": False, "latency_ms": None, "warning": None}
-        return JSONResponse({
-            "ok": False, "error": "timeout",
-            "checklist": CAPTURE_CHECKLIST.format(layer=layer, port=cfg.millumin.feedback_port),
-            "distance_m": round(abs_m, 3),
-        }, status_code=504)
-    state.millumin = {"ok": True, "latency_ms": res["latency_ms"], "warning": None}
+    m = state.manual[b]
     cset = showmod.ensure_cal_set(state.show, look, b)
-    point = {"distance_m": round(abs_m, 3), "scale": res["scale"],
-             "pos_x": res["pos_x"], "pos_y": res["pos_y"]}
+    point = {"distance_m": round(abs_m, 3), "scale": round(float(m["scale"]), 4),
+             "pos_x": round(float(m["pos_h"]), 4), "pos_y": round(float(m["pos_v"]), 4)}
     cset["points"], replaced = interp.insert_point(cset["points"], point)
     state.mark_dirty()
-    return {"ok": True, "point": point, "replaced": replaced,
-            "latency_ms": res["latency_ms"]}
+    return {"ok": True, "point": point, "replaced": replaced}
 
 
 @app.post("/api/beamer/{b}/points")
@@ -269,17 +261,14 @@ async def beamer_points(b: str, request: Request):
                     return err("Point needs numeric distance_m, scale, pos_x, pos_y.")
                 del pts[idx]
                 cset["points"], _ = interp.insert_point(pts, p)
-            else:  # recapture: current distance + current Millumin values
+            else:  # recapture: current distance + current manual drive values
                 if state.source_state() != "live":
                     return err("Distance is stale — capture disabled.")
                 abs_m, _ = state.distance()
-                _, beamer = active_beamer(b)
-                res = await asyncio.to_thread(io.query, beamer["layer"])
-                if res is None:
-                    return err("No reply from Millumin.", status=504)
+                m = state.manual[b]
                 del pts[idx]
-                p = {"distance_m": round(abs_m, 3), "scale": res["scale"],
-                     "pos_x": res["pos_x"], "pos_y": res["pos_y"]}
+                p = {"distance_m": round(abs_m, 3), "scale": round(float(m["scale"]), 4),
+                     "pos_x": round(float(m["pos_h"]), 4), "pos_y": round(float(m["pos_v"]), 4)}
                 cset["points"], _ = interp.insert_point(pts, p)
         else:
             return err(f"Unknown op '{op}'.")
@@ -352,6 +341,9 @@ async def set_smoothing(request: Request):
 
 @app.post("/api/test_millumin")
 async def test_millumin():
+    if not cfg.millumin.feedback:
+        # Custom Interaction addresses are send-only (no /? readback).
+        return {"ok": True, "note": "send-only", "latency_ms": None, "layer": None}
     look = showmod.active_look(state.show)
     layer = None
     if look:

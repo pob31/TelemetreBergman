@@ -81,8 +81,25 @@ def default_cal_set() -> dict:
     return {"interp": "linear", "trim": default_trim(), "points": []}
 
 
-def default_beamer(layer: str) -> dict:
-    return {"layer": layer, "enabled": True, "calibrations": {}}
+# Per-beamer OSC send addresses. Custom Millumin Interaction bindings by default
+# (scale is a 0..1 float, position is vertical-only in pixels); editable per show
+# so reverting to the standard /layer:NAME API is a data change, not a code change.
+OSC_DEFAULTS = {
+    "front": {"osc_scale": "/front/scale/1", "osc_posv": "/front/positionV/1",
+              "osc_posh": "/front/positionH/1"},
+    "rear": {"osc_scale": "/retro/scale/1", "osc_posv": "/retro/positionV/1",
+             "osc_posh": "/retro/positionH/1"},
+}
+OSC_KEYS = ("osc_scale", "osc_posv", "osc_posh")
+
+
+def default_osc(b: str) -> dict:
+    return dict(OSC_DEFAULTS.get(b, {k: "" for k in OSC_KEYS}))
+
+
+def default_beamer(b: str) -> dict:
+    o = default_osc(b)
+    return {"layer": b, "enabled": True, **o, "calibrations": {}}
 
 
 def new_show(name: str = "Nouveau spectacle") -> dict:
@@ -126,19 +143,24 @@ def _norm_cal_set(raw) -> dict:
     }
 
 
-def _norm_beamer(raw) -> Optional[dict]:
+def _norm_beamer(raw, b: str) -> Optional[dict]:
     if not isinstance(raw, dict):
         return None
     layer = raw.get("layer")
     if not isinstance(layer, str):
-        layer = ""
+        layer = b
+    o = default_osc(b)
     cals = raw.get("calibrations")
     cals = cals if isinstance(cals, dict) else {}
-    return {
+    out = {
         "layer": layer,
         "enabled": bool(raw.get("enabled", True)),
         "calibrations": {str(k): _norm_cal_set(v) for k, v in cals.items()},
     }
+    for k in OSC_KEYS:
+        v = raw.get(k)
+        out[k] = v if isinstance(v, str) else o[k]
+    return out
 
 
 def normalize(data) -> dict:
@@ -186,7 +208,7 @@ def normalize(data) -> dict:
         beamers = {}
         raw_beamers = raw_look.get("beamers") if isinstance(raw_look.get("beamers"), dict) else {}
         for b in BEAMER_KEYS:  # keys are exactly front/rear; each optional
-            nb = _norm_beamer(raw_beamers.get(b)) if b in raw_beamers else None
+            nb = _norm_beamer(raw_beamers.get(b), b) if b in raw_beamers else None
             if nb is not None:
                 beamers[b] = nb
         looks.append({"id": lid, "name": name, "beamers": beamers})

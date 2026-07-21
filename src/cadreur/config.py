@@ -26,7 +26,11 @@ class TelemetreCfg:
 class MilluminCfg:
     host: str = "127.0.0.1"
     port: int = 5000  # Millumin OSC input
-    feedback_port: int = 8000  # must match Millumin's API-feedback destination
+    # Feedback/readback is only used with the standard /layer:NAME API. Custom
+    # Interaction addresses (the default here) don't answer /? queries, so it is
+    # OFF by default: no listener is bound and the armed probe is disabled.
+    feedback: bool = False
+    feedback_port: int = 8001  # (8000 is often taken); must match Millumin's feedback dest
     feedback_timeout_ms: int = 1500
 
 

@@ -112,10 +112,10 @@ class TestTrimAndRounding(unittest.TestCase):
         self.assertAlmostEqual(baked[0]["distance_m"], 2.10)  # distance untouched
 
     def test_rounding(self):
-        v = round_for_send({"scale": 0.123456, "pos_x": 960.126, "pos_y": 539.994})
+        # All outputs are normalised 0..1 -> 4 dp.
+        v = round_for_send({"scale": 0.123456, "pos_x": 0.0, "pos_y": 0.876543})
         self.assertEqual(v["scale"], 0.1235)
-        self.assertEqual(v["pos_x"], 960.13)
-        self.assertEqual(v["pos_y"], 539.99)
+        self.assertEqual(v["pos_y"], 0.8765)
 
 
 if __name__ == "__main__":

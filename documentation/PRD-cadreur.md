@@ -8,6 +8,20 @@ Runs on: the show Mac running **Millumin V5** · Companion to the Telemetre Berg
 This document is self-contained. A fresh development session on the Mac must be able to
 implement the app from this file alone, without asking anything else.
 
+> **As-built note (2026-07-21).** The app was implemented and commissioned on the show Mac
+> with three changes agreed live with the video manager. The sections below still describe
+> the original design; where they differ, the as-built behaviour wins:
+> 1. **OSC addressing.** The show uses **custom Millumin Interaction addresses**, not the
+>    `/layer:NAME/…` API — per beamer `osc_scale` / `osc_posv` / `osc_posh` (defaults
+>    `/front|retro/scale|positionV|positionH/1`), stored in the show file and editable.
+> 2. **Normalised axes.** scale, **horizontal** (`positionH`) and **vertical** (`positionV`)
+>    are all floats **0.0–1.0** (Millumin's transformer maps them; 0.5 = centred). Position
+>    is not in pixels. Internally the point/param names stay `scale`/`pos_x`(=H)/`pos_y`(=V).
+> 3. **Calibration = "drive from Cadreur".** Custom addresses don't answer `/?` readback, so
+>    calibrate mode **drives** live manual values (three sliders) that Capture snapshots —
+>    there is no Millumin readback. Feedback listener + armed probe are **off by default**
+>    (`[millumin] feedback = false`). The travel mapping measured on stage is near-linear.
+
 ---
 
 ## 1. Purpose

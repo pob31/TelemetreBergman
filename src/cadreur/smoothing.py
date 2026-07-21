@@ -85,18 +85,17 @@ class SendPolicy:
         self.last = None
         self.last_t = None
 
-    def due(self, values: dict, now: float, deadband_scale: float,
-            deadband_px: float, refresh_hz: float) -> bool:
+    def due(self, values: dict, now: float, deadband: float,
+            refresh_hz: float) -> bool:
+        # scale, pos_x (horizontal) and pos_y (vertical) are all normalised
+        # 0..1, so one dead-band governs all three.
         if self.last is None or self.last_t is None:
             return True
         if refresh_hz > 0 and now - self.last_t >= 1.0 / refresh_hz:
             return True
-        if abs(values["scale"] - self.last["scale"]) >= deadband_scale:
-            return True
-        if abs(values["pos_x"] - self.last["pos_x"]) >= deadband_px:
-            return True
-        if abs(values["pos_y"] - self.last["pos_y"]) >= deadband_px:
-            return True
+        for k in ("scale", "pos_x", "pos_y"):
+            if abs(values[k] - self.last[k]) >= deadband:
+                return True
         return False
 
     def mark_sent(self, values: dict, now: float) -> None:

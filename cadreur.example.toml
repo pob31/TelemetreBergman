@@ -4,13 +4,17 @@
 # Path override: CADREUR_CONFIG env var.
 
 [telemetre]
-url = "http://192.168.1.36"     # cadreur appends /stream
+url = "http://192.168.0.51"     # cadreur appends /stream
 stale_after_ms = 1500           # Mac-side staleness without any SSE event
 
 [millumin]
 host = "127.0.0.1"
 port = 5000                     # Millumin OSC input
-feedback_port = 8000            # must match Millumin's API-feedback destination
+# Feedback/readback only works with the standard /layer:NAME API. With custom
+# Interaction addresses (the default), leave feedback off: no listener is bound
+# and the armed probe is disabled. Turn on only if you switch to the /layer API.
+feedback = false
+feedback_port = 8001            # (8000 is often taken); must match Millumin's feedback dest
 feedback_timeout_ms = 1500
 
 [web]

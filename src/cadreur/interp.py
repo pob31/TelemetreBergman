@@ -113,10 +113,10 @@ def bake_trim(points: List[dict], trim: dict) -> List[dict]:
 
 
 def round_for_send(values: dict) -> dict:
-    """Scale -> 4 dp, positions -> 2 dp — both below the dead-bands, so
-    rounding never fights the send policy."""
+    """All outputs are normalised 0..1 -> 4 dp (below the dead-band, so rounding
+    never fights the send policy). pos_x is unused (vertical-only output)."""
     return {
         "scale": round(values["scale"], 4),
-        "pos_x": round(values["pos_x"], 2),
-        "pos_y": round(values["pos_y"], 2),
+        "pos_x": round(values["pos_x"], 4),
+        "pos_y": round(values["pos_y"], 4),
     }

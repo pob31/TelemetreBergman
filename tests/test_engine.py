@@ -21,15 +21,24 @@ from cadreur.show import new_show  # noqa: E402
 from cadreur.state import CadreurState  # noqa: E402
 
 
+F_SCALE, F_POSV, F_POSH = "/front/scale/1", "/front/positionV/1", "/front/positionH/1"
+R_SCALE, R_POSV, R_POSH = "/retro/scale/1", "/retro/positionV/1", "/retro/positionH/1"
+
+
 class FakeIO:
     def __init__(self):
-        self.sent = []  # (kind, layer, values...)
+        self.sent = []  # (address, value)
 
-    def send_scale(self, layer, v):
-        self.sent.append(("scale", layer, v))
+    def send_value(self, address, value):
+        self.sent.append((address, value))
 
-    def send_position(self, layer, x, y):
-        self.sent.append(("xy", layer, x, y))
+
+def vals_to(io, addr):
+    return [v for a, v in io.sent if a == addr]
+
+
+def any_to(io, *addrs):
+    return any(a in addrs for a, _ in io.sent)
 
 
 def pt(d, s, x, y):
@@ -88,49 +97,47 @@ class TestGates(unittest.TestCase):
     def test_armed_sends_both_beamers(self):
         self.h.state.armed = True
         self.h.run_ticks(2)
-        kinds = {(k, layer) for k, layer, *_ in self.h.io.sent}
-        self.assertIn(("scale", "front"), kinds)
-        self.assertIn(("xy", "front"), kinds)
-        self.assertIn(("scale", "rear"), kinds)  # N=1: constant hold
+        self.assertTrue(vals_to(self.h.io, F_SCALE))
+        self.assertTrue(vals_to(self.h.io, F_POSV))
+        self.assertTrue(vals_to(self.h.io, R_SCALE))  # N=1: constant hold
 
     def test_snap_on_arm_first_send_is_target(self):
         self.h.state.armed = True
         self.h.run_ticks(1)
-        first_scale = next(v for k, layer, v in
-                           [(k, l, a[0]) for k, l, *a in self.h.io.sent]
-                           if k == "scale" and layer == "front")
-        self.assertAlmostEqual(first_scale, 0.5)  # interpolated at 3.0, no glide
+        self.assertAlmostEqual(vals_to(self.h.io, F_SCALE)[0], 0.5)  # interp at 3.0, no glide
 
     def test_disabled_beamer_silent(self):
         self.h.state.show["looks"][0]["beamers"]["front"]["enabled"] = False
         self.h.state.armed = True
         self.h.run_ticks(5)
-        self.assertFalse(any(l == "front" for _, l, *_ in self.h.io.sent))
-        self.assertTrue(any(l == "rear" for _, l, *_ in self.h.io.sent))
+        self.assertFalse(any_to(self.h.io, F_SCALE, F_POSV))
+        self.assertTrue(any_to(self.h.io, R_SCALE, R_POSV))
 
     def test_uncalibrated_memory_inhibits_no_fallback(self):
         self.h.state.show["settings"]["active_lens_memory"] = "M2"
         self.h.state.armed = True
         self.h.run_ticks(5)
-        self.assertFalse(any(l == "front" for _, l, *_ in self.h.io.sent))
+        self.assertFalse(any_to(self.h.io, F_SCALE, F_POSV))
         self.assertEqual(self.h.state.beamers["front"]["reason"], R_UNCALIBRATED)
 
     def test_empty_points_inhibits(self):
         self.h.state.show["looks"][0]["beamers"]["front"]["calibrations"]["M1"]["points"] = []
         self.h.state.armed = True
         self.h.run_ticks(5)
-        self.assertFalse(any(l == "front" for _, l, *_ in self.h.io.sent))
+        self.assertFalse(any_to(self.h.io, F_SCALE, F_POSV))
         self.assertEqual(self.h.state.beamers["front"]["reason"], R_NO_POINTS)
 
-    def test_calibrate_mode_suspends_output(self):
-        self.h.state.armed = True
-        self.h.run_ticks(2)
-        self.h.io.sent.clear()
+    def test_calibrate_mode_drives_manual(self):
+        # "Drive from Cadreur": calibrate sends the manual values live (even
+        # disarmed), and it does so independently of the master Arm.
+        self.h.state.manual["front"] = {"scale": 0.8, "pos_v": 0.3, "pos_h": 0.7}
         self.h.state.calibrate["front"] = True
-        self.h.run_ticks(30)
-        self.assertFalse(any(l == "front" for _, l, *_ in self.h.io.sent))
+        self.h.run_ticks(5)
+        self.assertAlmostEqual(vals_to(self.h.io, F_SCALE)[-1], 0.8)
+        self.assertAlmostEqual(vals_to(self.h.io, F_POSV)[-1], 0.3)
+        self.assertAlmostEqual(vals_to(self.h.io, F_POSH)[-1], 0.7)  # horizontal
         self.assertEqual(self.h.state.beamers["front"]["reason"], R_CALIBRATING)
-        self.assertTrue(any(l == "rear" for _, l, *_ in self.h.io.sent))
+        self.assertFalse(any_to(self.h.io, R_SCALE, R_POSV))  # rear disarmed, silent
 
 
 class TestSendPolicy(unittest.TestCase):
@@ -141,8 +148,7 @@ class TestSendPolicy(unittest.TestCase):
         h.run_ticks(1)  # initial send
         h.io.sent.clear()
         h.run_ticks(64)  # ~3.2 s at rest, refresh_hz = 1.0
-        front_scales = [s for k, l, *s in h.io.sent if l == "front" and k == "scale"]
-        self.assertEqual(len(front_scales), 3)  # one per refresh period, not 64
+        self.assertEqual(len(vals_to(h.io, F_SCALE)), 3)  # one per refresh period, not 64
 
     def test_movement_beyond_deadband_sends(self):
         h = EngineHarness()
@@ -152,7 +158,7 @@ class TestSendPolicy(unittest.TestCase):
         h.io.sent.clear()
         feed_distance(h.state, 3.1, now=h.now)  # big move -> slew glides
         h.run_ticks(4)  # 0.2 s << refresh period
-        self.assertTrue(any(l == "front" for _, l, *_ in h.io.sent))
+        self.assertTrue(any_to(h.io, F_SCALE, F_POSV))
 
 
 class TestStaleHold(unittest.TestCase):
@@ -164,7 +170,7 @@ class TestStaleHold(unittest.TestCase):
         h.io.sent.clear()
         h.state.sse_status(False)  # SSE drops: distance value holds
         h.run_ticks(60)  # 3 s
-        sends = [s[0] for k, l, *s in h.io.sent if l == "front" and k == "scale"]
+        sends = vals_to(h.io, F_SCALE)
         self.assertGreaterEqual(len(sends), 2)  # refresh cadence continues
         for v in sends:
             self.assertAlmostEqual(v, 0.5)  # held value, unchanged
@@ -185,7 +191,7 @@ class TestGlides(unittest.TestCase):
         doc["settings"]["active_look"] = copy["id"]
         h.io.sent.clear()
         h.run_ticks(20)  # 1 s of glide at slew 0.05/s: scale can move <= 0.05
-        scales = [s[0] for k, l, *s in h.io.sent if l == "front" and k == "scale"]
+        scales = vals_to(h.io, F_SCALE)
         self.assertTrue(scales)
         self.assertLess(max(scales), 0.5 + 0.06)  # no jump to 0.9
         self.assertGreater(max(scales), 0.5)  # but it is gliding upward
@@ -199,10 +205,10 @@ class TestGlides(unittest.TestCase):
         h.run_ticks(5)
         # Operator dragged the layer; exit re-seeds from feedback values.
         h.state.calibrate["front"] = False
-        h.engine.request_reseed("front", {"scale": 0.8, "pos_x": 900.0, "pos_y": 500.0})
+        h.engine.request_reseed("front", {"scale": 0.8, "pos_x": 0.0, "pos_y": 0.5})
         h.io.sent.clear()
         h.run_ticks(1)
-        first = next(s[0] for k, l, *s in h.io.sent if l == "front" and k == "scale")
+        first = vals_to(h.io, F_SCALE)[0]
         self.assertAlmostEqual(first, 0.7975, places=3)  # 0.8 gliding toward 0.5
 
 

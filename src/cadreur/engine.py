@@ -41,6 +41,7 @@ class _BeamerRuntime:
                       "pos_y": SlewLimiter(50.0)}
         self.policy = SendPolicy()
         self.pending: Optional[object] = None  # None | "snap" | seed dict
+        self.mode = "idle"  # idle | manual (calibrate drive) | play (interpolated)
 
 
 class Engine:
@@ -92,26 +93,29 @@ class Engine:
     def _tick_beamer(self, b: str, now: float, dt: float, doc: dict, look: Optional[dict],
                      sm: dict, armed: bool, abs_m: Optional[float], ever_usable: bool) -> dict:
         rt = self._rt[b]
-        rt.slews["scale"].rate_per_s = sm["slew_scale_per_s"]
-        rt.slews["pos_x"].rate_per_s = rt.slews["pos_y"].rate_per_s = sm["slew_px_per_s"]
+        # scale, pos_x (horizontal), pos_y (vertical) are all normalised 0..1.
+        for k in PARAMS:
+            rt.slews[k].rate_per_s = sm["slew_scale_per_s"]
 
         beamer = look["beamers"].get(b) if look else None
         cal_key = showmod.cal_key_for(doc, b)
         cset = showmod.cal_set_for(doc, look, b)
         calibrating = self.state.calibrate[b]
 
-        if not armed:
-            reason = R_DISARMED
-        elif beamer is None:
+        # Calibrate drives manual values independently of the master Arm (you
+        # calibrate before arming the show), so it ranks above the arm check.
+        if beamer is None:
             reason = R_NO_BEAMER
+        elif calibrating:
+            reason = R_CALIBRATING
+        elif not armed:
+            reason = R_DISARMED
         elif not beamer["enabled"]:
             reason = R_DISABLED
         elif cset is None:
             reason = R_UNCALIBRATED  # never fall back to another memory's set
         elif not cset["points"]:
             reason = R_NO_POINTS
-        elif calibrating:
-            reason = R_CALIBRATING
         elif not ever_usable:
             reason = R_NO_DISTANCE
         else:
@@ -125,31 +129,60 @@ class Engine:
             if v is not None:
                 target = apply_trim(v, cset["trim"])
 
+        # Mode: calibrate DRIVES manual values live (takes priority); else armed
+        # playback interpolates; else idle (total OSC silence). A mode change
+        # resets the send policy so the first tick in the new mode sends.
+        if calibrating and beamer is not None:
+            mode = "manual"
+        elif gate and target is not None:
+            mode = "play"
+        else:
+            mode = "idle"
+        if mode != rt.mode:
+            rt.policy.reset()
+            rt.mode = mode
+
+        addr_scale = beamer["osc_scale"] if beamer else ""
+        addr_posv = beamer["osc_posv"] if beamer else ""
+        addr_posh = beamer.get("osc_posh", "") if beamer else ""
         values = None
         sending = False
-        if gate and target is not None:
+
+        def emit(v):
+            self.io.send_value(addr_scale, v["scale"])
+            self.io.send_value(addr_posh, v["pos_x"])  # horizontal
+            self.io.send_value(addr_posv, v["pos_y"])  # vertical
+
+        if mode == "manual":
+            m = self.state.manual[b]
+            values = round_for_send({"scale": m["scale"], "pos_x": m["pos_h"], "pos_y": m["pos_v"]})
+            for k in PARAMS:  # keep slews seeded so the exit handover glides
+                rt.slews[k].snap(values[k])
+            rt.pending = None
+            if rt.policy.due(values, now, sm["deadband_scale"], sm["refresh_hz"]):
+                emit(values)
+                rt.policy.mark_sent(values, now)
+                sending = True
+        elif mode == "play":
             if rt.pending == "snap":
                 for k in PARAMS:
                     rt.slews[k].snap(target[k])
             elif isinstance(rt.pending, dict):
                 seed = rt.pending
-                rt.slews["scale"].snap(seed["scale"])
-                rt.slews["pos_x"].snap(seed["pos_x"])
-                rt.slews["pos_y"].snap(seed["pos_y"])
+                rt.slews["scale"].snap(seed.get("scale", target["scale"]))
+                rt.slews["pos_x"].snap(seed.get("pos_x", target["pos_x"]))
+                rt.slews["pos_y"].snap(seed.get("pos_y", target["pos_y"]))
             rt.pending = None
             slewed = {k: rt.slews[k].step(target[k], dt) for k in PARAMS}
             values = round_for_send(slewed)
-            if rt.policy.due(values, now, sm["deadband_scale"], sm["deadband_px"], sm["refresh_hz"]):
-                self.io.send_scale(beamer["layer"], values["scale"])
-                self.io.send_position(beamer["layer"], values["pos_x"], values["pos_y"])
+            if rt.policy.due(values, now, sm["deadband_scale"], sm["refresh_hz"]):
+                emit(values)
                 rt.policy.mark_sent(values, now)
                 sending = True
         else:
-            # Gated: zero OSC. Show the would-be values so the operator sees
-            # what arming/enabling would send. Reset the send policy so the
-            # first tick after the gate reopens sends immediately.
+            # Idle: zero OSC. Show the would-be values so the operator sees what
+            # arming/enabling would send.
             values = round_for_send(target) if target is not None else None
-            rt.policy.reset()
 
         return {
             "gate": gate,

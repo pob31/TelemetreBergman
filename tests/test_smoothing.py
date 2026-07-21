@@ -94,10 +94,11 @@ class TestSlewLimiter(unittest.TestCase):
 
 
 class TestSendPolicy(unittest.TestCase):
-    V = {"scale": 0.5, "pos_x": 960.0, "pos_y": 540.0}
+    # scale and pos_y (vertical) are both normalised 0..1 -> one dead-band.
+    V = {"scale": 0.5, "pos_x": 0.0, "pos_y": 0.5}
 
     def decide(self, sp, values, now):
-        return sp.due(values, now, 0.0005, 0.5, 1.0)
+        return sp.due(values, now, 0.0005, 1.0)
 
     def test_first_send_always_due(self):
         sp = SendPolicy()
@@ -106,13 +107,13 @@ class TestSendPolicy(unittest.TestCase):
     def test_deadband_suppression(self):
         sp = SendPolicy()
         sp.mark_sent(self.V, 0.0)
-        tiny = {"scale": 0.5002, "pos_x": 960.3, "pos_y": 540.1}
+        tiny = {"scale": 0.5002, "pos_x": 0.0, "pos_y": 0.5002}
         self.assertFalse(self.decide(sp, tiny, 0.5))
 
-    def test_deadband_exceeded_sends(self):
+    def test_deadband_exceeded_sends_on_vertical(self):
         sp = SendPolicy()
         sp.mark_sent(self.V, 0.0)
-        moved = {"scale": 0.5, "pos_x": 960.6, "pos_y": 540.0}
+        moved = {"scale": 0.5, "pos_x": 0.0, "pos_y": 0.5006}
         self.assertTrue(self.decide(sp, moved, 0.1))
 
     def test_refresh_due_sends_even_at_rest(self):

@@ -41,6 +41,10 @@ class MilluminIO:
 
     # --- lifecycle ------------------------------------------------------------
     def start(self) -> None:
+        if not self.cfg.feedback:
+            # Custom Interaction addresses don't answer /? queries — no listener.
+            log.info("OSC out -> %s:%d (feedback disabled)", self.cfg.host, self.cfg.port)
+            return
         disp = Dispatcher()
         disp.set_default_handler(self._on_feedback)
         try:
@@ -61,15 +65,14 @@ class MilluminIO:
             self._server = None
 
     # --- absolute sends (engine tick) -----------------------------------------
-    def send_scale(self, layer: str, value: float) -> None:
+    def send_value(self, address: str, value: float) -> None:
+        """Send one float to an explicit OSC address. Addresses are configured
+        per beamer (e.g. /front/scale/1, /front/positionV/1), so both custom
+        Interaction bindings and the standard /layer:NAME API are just data."""
+        if not address:
+            return
         try:
-            self._client.send_message(f"/layer:{layer}/scale", float(value))
-        except OSError as e:
-            log.warning("OSC send failed: %s", e)
-
-    def send_position(self, layer: str, x: float, y: float) -> None:
-        try:
-            self._client.send_message(f"/layer:{layer}/position/xy", [float(x), float(y)])
+            self._client.send_message(address, float(value))
         except OSError as e:
             log.warning("OSC send failed: %s", e)
 

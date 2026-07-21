@@ -116,7 +116,7 @@
     wrap.className = "point-form";
     const fields = [
       ["distance_m", T.field_distance, 3], ["scale", T.field_scale, 4],
-      ["pos_x", T.field_x, 2], ["pos_y", T.field_y, 2],
+      ["pos_x", T.field_horizontal, 4], ["pos_y", T.field_vertical, 4],
     ];
     const inputs = {};
     for (const [key, label] of fields) {
@@ -183,7 +183,8 @@
   });
   $("btn-test").addEventListener("click", async () => {
     const r = await api("/api/test_millumin");
-    if (r.ok) toast(sub("toast_test_ok", { ms: r.latency_ms, layer: r.layer }));
+    if (r.ok && r.note === "send-only") toast(T.toast_test_sendonly);
+    else if (r.ok) toast(sub("toast_test_ok", { ms: r.latency_ms, layer: r.layer }));
     else if (r.checklist) {
       const p = document.createElement("p");
       p.className = "checklist";
@@ -261,8 +262,7 @@
   });
 
   // ---- smoothing drawer (built once) ----
-  const SMOOTH_KEYS = ["ema_tau_s", "deadband_scale", "deadband_px",
-                       "slew_scale_per_s", "slew_px_per_s", "refresh_hz"];
+  const SMOOTH_KEYS = ["ema_tau_s", "deadband_scale", "slew_scale_per_s", "refresh_hz"];
   const smoothInputs = {};
   for (const k of SMOOTH_KEYS) {
     const l = document.createElement("label");
@@ -290,9 +290,24 @@
       statusDot: q(".status-dot"), statusText: q(".status-text"),
       liveValues: q(".live-values"), calflag: q(".calflag"), calToggle: q(".cal-toggle"),
       capture: q(".capture"), tbody: q(".points tbody"), pointsSig: "",
+      manual: q(".manual"),
+      driveScale: q(".drive-scale"), driveScaleVal: q(".drive-scale-val"),
+      driveVpos: q(".drive-vpos"), driveVposVal: q(".drive-vpos-val"),
+      driveHpos: q(".drive-hpos"), driveHposVal: q(".drive-hpos-val"),
       trimScale: q(".trim-scale"), trimX: q(".trim-x"), trimY: q(".trim-y"),
     };
     const p = panels[b];
+
+    // Drive-from-Cadreur: the sliders send manual values live while calibrating.
+    const wireDrive = (slider, valSpan, field) =>
+      slider.addEventListener("input", () => {
+        const v = parseFloat(slider.value);
+        valSpan.textContent = v.toFixed(3);
+        api(`/api/beamer/${b}/manual`, { [field]: v });
+      });
+    wireDrive(p.driveScale, p.driveScaleVal, "scale");
+    wireDrive(p.driveVpos, p.driveVposVal, "pos_v");
+    wireDrive(p.driveHpos, p.driveHposVal, "pos_h");
 
     p.layer.addEventListener("click", () => {
       const name = prompt(T.prompt_layer, p.layer.textContent === "—" ? "" : p.layer.textContent);
@@ -307,7 +322,7 @@
       if (r.ok) {
         toast(sub("toast_captured", {
           d: fmt(r.point.distance_m, 3), s: fmt(r.point.scale, 4),
-          x: fmt(r.point.pos_x, 1), y: fmt(r.point.pos_y, 1),
+          x: fmt(r.point.pos_x, 4), y: fmt(r.point.pos_y, 4),
         }) + (r.replaced ? T.toast_replaced : ""));
       } else if (r.error === "timeout") openCaptureTimeoutModal(b, r);
       else apiErr(r);
@@ -515,11 +530,26 @@
 
     const v = st.values;
     p.liveValues.textContent = !v ? "—"
-      : `scale ${fmt(v.scale, 4)}   x ${fmt(v.pos_x, 1)}   y ${fmt(v.pos_y, 1)}`
-        + (st.gate ? " · " + T.sending : "");
+      : `échelle ${fmt(v.scale, 4)}   ·   H ${fmt(v.pos_x, 4)}   ·   V ${fmt(v.pos_y, 4)}`
+        + (st.sending ? " · " + T.sending : "");
 
     const calOn = !!d.calibrate[b];
     p.calflag.classList.toggle("hidden", !calOn);
+    p.manual.classList.toggle("hidden", !calOn);
+    // Reflect the current drive values on the sliders unless the operator is
+    // dragging one right now.
+    const man = d.manual && d.manual[b];
+    const syncSlider = (slider, valSpan, val) => {
+      if (val != null && document.activeElement !== slider) {
+        slider.value = val;
+        valSpan.textContent = Number(val).toFixed(3);
+      }
+    };
+    if (man) {
+      syncSlider(p.driveScale, p.driveScaleVal, man.scale);
+      syncSlider(p.driveVpos, p.driveVposVal, man.pos_v);
+      syncSlider(p.driveHpos, p.driveHposVal, man.pos_h);
+    }
     p.calToggle.textContent = calOn ? T.calibrate_exit : T.calibrate_mode;
     p.calToggle.classList.toggle("warn", calOn);
     p.capture.disabled = !calOn || d.distance.source !== "live";
@@ -531,7 +561,7 @@
       p.pointsSig = sig;
       p.tbody.replaceChildren(...pts.map((pt, i) => {
         const tr = document.createElement("tr");
-        const cells = [fmt(pt.distance_m, 3), fmt(pt.scale, 4), fmt(pt.pos_x, 1), fmt(pt.pos_y, 1)];
+        const cells = [fmt(pt.distance_m, 3), fmt(pt.scale, 4), fmt(pt.pos_x, 4), fmt(pt.pos_y, 4)];
         for (const c of cells) {
           const td = document.createElement("td");
           td.textContent = c;
@@ -554,8 +584,8 @@
     const cset = currentCalSet(b);
     const trim = cset ? cset.trim : { scale_mul: 1, dx_px: 0, dy_px: 0 };
     p.trimScale.textContent = "×" + fmt(trim.scale_mul, 3);
-    p.trimX.textContent = signed(trim.dx_px, 0);
-    p.trimY.textContent = signed(trim.dy_px, 0);
+    p.trimX.textContent = signed(trim.dx_px, 3);
+    p.trimY.textContent = signed(trim.dy_px, 3);
   }
 
   // ---- live stream (EventSource auto-reconnects) ----

@@ -51,6 +51,13 @@ class CadreurState:
         # --- runtime controls ---
         self.armed = False  # never persisted
         self.calibrate = {"front": False, "rear": False}
+        # Manual drive values (PRD calibration = "drive from Cadreur"): while a
+        # beamer is in calibrate mode the operator sets these and they are sent
+        # live; Capture snapshots them into a point. Runtime-only, not persisted.
+        # scale, pos_v (vertical), pos_h (horizontal) are all normalised 0..1
+        # (Millumin maps them); 0.5 = centred on both axes.
+        self.manual = {b: {"scale": 0.5, "pos_v": 0.5, "pos_h": 0.5}
+                       for b in showmod.BEAMER_KEYS}
 
         # --- written by the engine / probes, read by the UI ---
         self.beamers: dict = {b: {} for b in showmod.BEAMER_KEYS}
@@ -155,6 +162,7 @@ class CadreurState:
             "distance": dist,
             "armed": self.armed,
             "calibrate": dict(self.calibrate),
+            "manual": {b: dict(v) for b, v in self.manual.items()},
             "settings": dict(doc["settings"]),
             "lens_memories": list(doc["lens_memories"]),
             "smoothing": dict(doc["smoothing"]),
