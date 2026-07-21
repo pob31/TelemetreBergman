@@ -10,7 +10,9 @@ so the stage manager can nudge the cart onto a mark in real time.
   shown alongside. Direction is invertible.
 - Runs headless, **auto-starts at boot**, and can be **safely powered off/rebooted
   from the web page** (no unplugging).
-- **OSC output** provisioned (disabled by default) for a future show-control feed.
+- **OSC output** (disabled by default): streams the filtered position as
+  `/telemetre/position` (float, meters) to **one or more UDP destinations** —
+  e.g. the Millumin Mac and a backup machine.
 
 ## Companion app — Cadreur
 
@@ -98,7 +100,7 @@ git clone <repo-url> ~/TelemetreBergman && cd ~/TelemetreBergman
 ./scripts/install.sh          # overlay, venv+deps, config.toml, sudoers, systemd
 # reboot once if it reports the overlay was newly added
 ```
-Then browse to **http://192.168.1.36/** (or the Pi's IP). Give the Pi a DHCP
+Then browse to **http://192.168.0.51/** (or the Pi's IP). Give the Pi a DHCP
 reservation so that address is stable.
 
 ## Configure
@@ -126,7 +128,7 @@ sudo systemctl restart telemetre
 ## Deploy an update
 ```bash
 # from the dev machine
-ssh bergman@192.168.1.36 "~/TelemetreBergman/scripts/deploy.sh"   # git pull + restart
+ssh bergman@192.168.0.51 "~/TelemetreBergman/scripts/deploy.sh"   # git pull + restart
 ```
 
 ## Development / tests

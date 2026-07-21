@@ -62,10 +62,15 @@ class WebCfg:
 @dataclass
 class OscCfg:
     enabled: bool = False
-    host: str = "127.0.0.1"
+    host: str = "127.0.0.1"  # single target, used only when `hosts` is empty
+    hosts: List[str] = field(default_factory=list)  # fan-out targets (same port)
     port: int = 9000
     address: str = "/telemetre/position"
     rate_hz: int = 30
+
+    @property
+    def targets(self) -> List[str]:
+        return list(self.hosts) if self.hosts else [self.host]
 
 
 @dataclass

@@ -413,7 +413,7 @@ as `src/telemetre/config.py`; every key has a code default):
 
 ```toml
 [telemetre]
-url = "http://192.168.1.36"     # cadreur appends /stream
+url = "http://192.168.0.51"     # cadreur appends /stream
 stale_after_ms = 1500
 
 [millumin]

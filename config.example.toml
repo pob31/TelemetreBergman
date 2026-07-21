@@ -33,12 +33,14 @@ state_file = "state.json" # persists the tare zero + sign across restarts
 
 [web]
 host = "0.0.0.0"
-port = 80                 # crew browses to http://192.168.1.36
+port = 80                 # crew browses to http://192.168.0.51
 
 [osc]
-# Future add-on — off by default. Sends the filtered position (meters) as a
-# single OSC float when enabled.
+# Off by default. When enabled, sends the filtered position (meters) as a
+# single OSC float to every host in `hosts` (UDP, same port for all).
+# Leave `hosts` empty to use the single `host` instead.
 enabled = false
+hosts   = []              # e.g. ["192.168.0.12", "192.168.0.11"]  show Mac + backup
 host    = "127.0.0.1"
 port    = 9000
 address = "/telemetre/position"

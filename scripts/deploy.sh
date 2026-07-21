@@ -2,7 +2,7 @@
 # Pull the latest code and restart the service. Run on the Pi:
 #   ~/TelemetreBergman/scripts/deploy.sh
 # Or from the dev machine:
-#   ssh bergman@192.168.1.36 "~/TelemetreBergman/scripts/deploy.sh"
+#   ssh bergman@192.168.0.51 "~/TelemetreBergman/scripts/deploy.sh"
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
