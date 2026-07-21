@@ -147,6 +147,23 @@ label { color: var(--muted); text-transform: uppercase; font-size: .7rem; letter
 .enable { display: flex; align-items: center; gap: 6px; text-transform: none; font-size: .85rem; cursor: pointer; }
 .enable input { width: 20px; height: 20px; accent-color: var(--accent); }
 
+/* ---- v2: beamer columns + channel cards ---- */
+.capture-all-bar { display: flex; justify-content: center; }
+.capture-all-bar #btn-capture-all { font-size: 1rem; padding: 12px 20px; }
+.beamers { display: grid; grid-template-columns: 1fr 1fr; gap: var(--gap); align-items: start; }
+@media (max-width: 900px) { .beamers { grid-template-columns: 1fr; } }
+.beamer-col { display: flex; flex-direction: column; gap: 12px; }
+.col-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.col-title { font-weight: 800; letter-spacing: 2px; }
+.col-spacer { flex: 1; }
+.channels { display: flex; flex-direction: column; gap: 12px; }
+.channel { display: flex; flex-direction: column; gap: 8px; background: var(--panel-2); border-radius: 12px; padding: 12px; }
+.ch-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ch-name { font-weight: 800; font-size: 1rem; }
+.ch-actions { display: flex; gap: 8px; }
+.ch-actions .cal-toggle { flex: 1; }
+.ch-del { padding: 6px 10px; }
+
 .chips { display: flex; gap: 8px; }
 .chip {
   appearance: none; cursor: pointer; font: inherit; font-weight: 800;

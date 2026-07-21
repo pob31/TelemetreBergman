@@ -43,104 +43,66 @@
       </div>
     </section>
 
-    <section class="lookbar card">
-      <label data-i18n="look" data-help="help_look">LOOK</label>
-      <select id="look-select"></select>
-      <div class="lookbtns">
-        <button id="look-new" class="btn btn-mini" data-i18n="look_new">+ new</button>
-        <button id="look-dup" class="btn btn-mini" data-i18n="look_dup">duplicate</button>
-        <button id="look-ren" class="btn btn-mini" data-i18n="look_ren">rename</button>
-        <button id="look-del" class="btn btn-mini danger" data-i18n="look_del">delete</button>
+    <section class="capture-all-bar hidden" id="capture-all-bar">
+      <button id="btn-capture-all" class="btn btn-primary" data-i18n="capture_all" data-help="help_capture_all">⊕ Capturer tous les canaux en calibration</button>
+    </section>
+
+    <section class="beamers">
+      <div class="beamer-col card" data-beamer="front">
+        <div class="col-head">
+          <span class="col-title" data-help="help_front">FACE</span>
+          <div class="chips"></div>
+          <span class="col-spacer"></span>
+          <button class="btn btn-mini add-channel" data-i18n="add_channel">+ canal</button>
+        </div>
+        <div class="channels"></div>
+      </div>
+      <div class="beamer-col card" data-beamer="rear">
+        <div class="col-head">
+          <span class="col-title" data-help="help_rear">RÉTRO</span>
+          <span class="col-spacer"></span>
+          <button class="btn btn-mini add-channel" data-i18n="add_channel">+ canal</button>
+        </div>
+        <div class="channels"></div>
       </div>
     </section>
 
-    <section class="panels">
-      <!-- The two beamer panels share markup; app.js drives them by data-beamer. -->
-      <div class="panel card" data-beamer="front">
-        <div class="panel-head">
-          <span class="panel-title" data-help="help_front">FRONT</span>
-          <span class="layer-wrap"><span data-i18n="layer">layer:</span>
-            <button class="layer-name btn-link">—</button></span>
-          <label class="enable"><input type="checkbox" class="enable-box" />
-            <span data-i18n="enable">enable</span></label>
+    <!-- One channel card; app.js clones it per channel and applies i18n. -->
+    <template id="channel-tpl">
+      <div class="channel" data-cid="">
+        <div class="ch-head">
+          <button class="ch-name btn-link">—</button>
+          <label class="enable"><input type="checkbox" class="enable-box" /><span data-i18n="enable">actif</span></label>
+          <span class="col-spacer"></span>
+          <button class="btn btn-mini ch-osc" data-i18n="osc_edit">OSC…</button>
+          <button class="btn btn-mini danger ch-del" aria-label="delete">🗑</button>
         </div>
-        <div class="chips" hidden></div>
         <div class="beamer-status"><span class="status-dot dot"></span><span class="status-text">—</span></div>
-        <div class="live"><span data-i18n="live">live:</span>
-          <span class="live-values">—</span></div>
+        <div class="live"><span data-i18n="live">envoi :</span> <span class="live-values">—</span></div>
         <div class="calflag hidden" data-i18n="calibrating_flag">CALIBRATION — pilotage direct</div>
         <div class="manual hidden">
-          <label class="manual-row"><span data-i18n="m_scale">échelle</span>
-            <input type="range" class="drive-scale" min="0" max="1" step="0.001" value="0.5" />
-            <span class="drive-scale-val">0.500</span></label>
-          <label class="manual-row"><span data-i18n="m_vertical">vertical</span>
-            <input type="range" class="drive-vpos" min="0" max="1" step="0.001" value="0.5" />
-            <span class="drive-vpos-val">0.500</span></label>
-          <label class="manual-row"><span data-i18n="m_horizontal">horizontal</span>
-            <input type="range" class="drive-hpos" min="0" max="1" step="0.001" value="0.5" />
-            <span class="drive-hpos-val">0.500</span></label>
+          <label class="manual-row"><span data-i18n="m_scale">échelle</span><input type="range" class="drive-scale" min="0" max="1" step="0.001" value="0.5" /><span class="drive-scale-val">0.500</span></label>
+          <label class="manual-row"><span data-i18n="m_horizontal">horizontal</span><input type="range" class="drive-hpos" min="0" max="1" step="0.001" value="0.5" /><span class="drive-hpos-val">0.500</span></label>
+          <label class="manual-row"><span data-i18n="m_vertical">vertical</span><input type="range" class="drive-vpos" min="0" max="1" step="0.001" value="0.5" /><span class="drive-vpos-val">0.500</span></label>
         </div>
-        <button class="btn cal-toggle" data-i18n="calibrate_mode">Calibrate mode</button>
-        <button class="btn btn-primary capture" data-i18n="capture">⊕ Capture point</button>
-        <table class="points">
-          <thead><tr>
-            <th data-help="help_points">d (m)</th><th data-i18n="th_scale">scale</th><th data-i18n="th_horizontal">hor.</th><th data-i18n="th_vertical">vert.</th><th></th>
-          </tr></thead>
-          <tbody></tbody>
-        </table>
-        <button class="btn btn-mini add-manual" data-i18n="add_manual">+ manual point</button>
+        <div class="ch-actions">
+          <button class="btn cal-toggle" data-i18n="calibrate_mode">Mode calibration</button>
+          <button class="btn btn-primary capture" data-i18n="capture">⊕ Capturer</button>
+        </div>
+        <table class="points"><thead><tr>
+          <th data-help="help_points">d (m)</th><th data-i18n="th_scale">échelle</th><th data-i18n="th_horizontal">hor.</th><th data-i18n="th_vertical">vert.</th><th></th>
+        </tr></thead><tbody></tbody></table>
+        <button class="btn btn-mini add-manual" data-i18n="add_manual">+ point manuel</button>
         <div class="trim">
           <span data-i18n="trim" data-help="help_trim">trim</span>
-          <span class="trim-group">scale <button class="btn-nudge" data-trim="scale_mul" data-step="-0.01">−−</button><button class="btn-nudge" data-trim="scale_mul" data-step="-0.001">−</button><span class="trim-val trim-scale">×1.000</span><button class="btn-nudge" data-trim="scale_mul" data-step="0.001">+</button><button class="btn-nudge" data-trim="scale_mul" data-step="0.01">++</button></span>
-          <span class="trim-group"><span data-i18n="m_horizontal">horizontal</span> <button class="btn-nudge" data-trim="dx_px" data-step="-0.01">−−</button><button class="btn-nudge" data-trim="dx_px" data-step="-0.001">−</button><span class="trim-val trim-x">+0.000</span><button class="btn-nudge" data-trim="dx_px" data-step="0.001">+</button><button class="btn-nudge" data-trim="dx_px" data-step="0.01">++</button></span>
-          <span class="trim-group"><span data-i18n="m_vertical">vertical</span> <button class="btn-nudge" data-trim="dy_px" data-step="-0.01">−−</button><button class="btn-nudge" data-trim="dy_px" data-step="-0.001">−</button><span class="trim-val trim-y">+0.000</span><button class="btn-nudge" data-trim="dy_px" data-step="0.001">+</button><button class="btn-nudge" data-trim="dy_px" data-step="0.01">++</button></span>
-          <button class="btn btn-mini trim-bake" data-i18n="bake">bake</button>
-          <button class="btn btn-mini trim-reset" data-i18n="reset">reset</button>
+          <span class="trim-group">×<span class="trim-val trim-scale">1.000</span> <button class="btn-nudge" data-trim="scale_mul" data-step="-0.01">−−</button><button class="btn-nudge" data-trim="scale_mul" data-step="-0.001">−</button><button class="btn-nudge" data-trim="scale_mul" data-step="0.001">+</button><button class="btn-nudge" data-trim="scale_mul" data-step="0.01">++</button></span>
+          <span class="trim-group"><span data-i18n="m_horizontal">horizontal</span> <span class="trim-val trim-x">+0.000</span> <button class="btn-nudge" data-trim="dx_px" data-step="-0.01">−−</button><button class="btn-nudge" data-trim="dx_px" data-step="-0.001">−</button><button class="btn-nudge" data-trim="dx_px" data-step="0.001">+</button><button class="btn-nudge" data-trim="dx_px" data-step="0.01">++</button></span>
+          <span class="trim-group"><span data-i18n="m_vertical">vertical</span> <span class="trim-val trim-y">+0.000</span> <button class="btn-nudge" data-trim="dy_px" data-step="-0.01">−−</button><button class="btn-nudge" data-trim="dy_px" data-step="-0.001">−</button><button class="btn-nudge" data-trim="dy_px" data-step="0.001">+</button><button class="btn-nudge" data-trim="dy_px" data-step="0.01">++</button></span>
+          <button class="btn btn-mini trim-bake" data-i18n="bake">figer</button>
+          <button class="btn btn-mini trim-reset" data-i18n="reset">raz</button>
         </div>
       </div>
-      <div class="panel card" data-beamer="rear">
-        <div class="panel-head">
-          <span class="panel-title" data-help="help_rear">REAR</span>
-          <span class="layer-wrap"><span data-i18n="layer">layer:</span>
-            <button class="layer-name btn-link">—</button></span>
-          <label class="enable"><input type="checkbox" class="enable-box" />
-            <span data-i18n="enable">enable</span></label>
-        </div>
-        <div class="chips" hidden></div>
-        <div class="beamer-status"><span class="status-dot dot"></span><span class="status-text">—</span></div>
-        <div class="live"><span data-i18n="live">live:</span>
-          <span class="live-values">—</span></div>
-        <div class="calflag hidden" data-i18n="calibrating_flag">CALIBRATION — pilotage direct</div>
-        <div class="manual hidden">
-          <label class="manual-row"><span data-i18n="m_scale">échelle</span>
-            <input type="range" class="drive-scale" min="0" max="1" step="0.001" value="0.5" />
-            <span class="drive-scale-val">0.500</span></label>
-          <label class="manual-row"><span data-i18n="m_vertical">vertical</span>
-            <input type="range" class="drive-vpos" min="0" max="1" step="0.001" value="0.5" />
-            <span class="drive-vpos-val">0.500</span></label>
-          <label class="manual-row"><span data-i18n="m_horizontal">horizontal</span>
-            <input type="range" class="drive-hpos" min="0" max="1" step="0.001" value="0.5" />
-            <span class="drive-hpos-val">0.500</span></label>
-        </div>
-        <button class="btn cal-toggle" data-i18n="calibrate_mode">Calibrate mode</button>
-        <button class="btn btn-primary capture" data-i18n="capture">⊕ Capture point</button>
-        <table class="points">
-          <thead><tr>
-            <th data-help="help_points">d (m)</th><th data-i18n="th_scale">scale</th><th data-i18n="th_horizontal">hor.</th><th data-i18n="th_vertical">vert.</th><th></th>
-          </tr></thead>
-          <tbody></tbody>
-        </table>
-        <button class="btn btn-mini add-manual" data-i18n="add_manual">+ manual point</button>
-        <div class="trim">
-          <span data-i18n="trim" data-help="help_trim">trim</span>
-          <span class="trim-group">scale <button class="btn-nudge" data-trim="scale_mul" data-step="-0.01">−−</button><button class="btn-nudge" data-trim="scale_mul" data-step="-0.001">−</button><span class="trim-val trim-scale">×1.000</span><button class="btn-nudge" data-trim="scale_mul" data-step="0.001">+</button><button class="btn-nudge" data-trim="scale_mul" data-step="0.01">++</button></span>
-          <span class="trim-group"><span data-i18n="m_horizontal">horizontal</span> <button class="btn-nudge" data-trim="dx_px" data-step="-0.01">−−</button><button class="btn-nudge" data-trim="dx_px" data-step="-0.001">−</button><span class="trim-val trim-x">+0.000</span><button class="btn-nudge" data-trim="dx_px" data-step="0.001">+</button><button class="btn-nudge" data-trim="dx_px" data-step="0.01">++</button></span>
-          <span class="trim-group"><span data-i18n="m_vertical">vertical</span> <button class="btn-nudge" data-trim="dy_px" data-step="-0.01">−−</button><button class="btn-nudge" data-trim="dy_px" data-step="-0.001">−</button><span class="trim-val trim-y">+0.000</span><button class="btn-nudge" data-trim="dy_px" data-step="0.001">+</button><button class="btn-nudge" data-trim="dy_px" data-step="0.01">++</button></span>
-          <button class="btn btn-mini trim-bake" data-i18n="bake">bake</button>
-          <button class="btn btn-mini trim-reset" data-i18n="reset">reset</button>
-        </div>
-      </div>
-    </section>
+    </template>
 
     <footer class="showbar card">
       <div class="showfile" data-help="help_show">
@@ -193,6 +155,13 @@
       "capture": "⊕ Capture point", "add_manual": "+ manual point",
       "m_scale": "scale", "m_vertical": "vertical", "m_horizontal": "horizontal",
       "th_scale": "scale", "th_vertical": "vert.", "th_horizontal": "hor.",
+      "add_channel": "+ channel", "capture_all": "⊕ Capture all calibrating channels", "osc_edit": "OSC…",
+      "confirm_delete_channel": "Delete this channel and its calibration?",
+      "prompt_channel_name": "Channel name:",
+      "toast_captured_all": "Captured {n} channel(s) at {d} m",
+      "modal_osc_title": "OSC addresses",
+      "field_osc_scale": "scale address", "field_osc_posh": "horizontal address", "field_osc_posv": "vertical address",
+      "help_capture_all": "Capture all|Stores a point at the current distance for every channel in calibrate mode — fit every layer at this scrim position, then capture them all at once.",
       "trim": "trim", "bake": "bake", "reset": "reset",
       "save": "Save", "save_as": "Save as", "load": "Load",
       "export": "Export", "import": "Import",
@@ -274,6 +243,13 @@
       "capture": "⊕ Capturer un point", "add_manual": "+ point manuel",
       "m_scale": "échelle", "m_vertical": "vertical", "m_horizontal": "horizontal",
       "th_scale": "échelle", "th_vertical": "vert.", "th_horizontal": "hor.",
+      "add_channel": "+ canal", "capture_all": "⊕ Capturer tous les canaux en calibration", "osc_edit": "OSC…",
+      "confirm_delete_channel": "Supprimer ce canal et sa calibration ?",
+      "prompt_channel_name": "Nom du canal :",
+      "toast_captured_all": "{n} canal/canaux capturé(s) à {d} m",
+      "modal_osc_title": "Adresses OSC",
+      "field_osc_scale": "adresse échelle", "field_osc_posh": "adresse horizontale", "field_osc_posv": "adresse verticale",
+      "help_capture_all": "Capturer tous|Enregistre un point à la distance courante pour chaque canal en mode calibration — règle tous les layers à cette position du rideau, puis capture tout d'un coup.",
       "trim": "trim", "bake": "figer", "reset": "raz",
       "save": "Enregistrer", "save_as": "Enregistrer sous", "load": "Ouvrir",
       "export": "Exporter", "import": "Importer",

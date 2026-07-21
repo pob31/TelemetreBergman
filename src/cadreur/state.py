@@ -48,22 +48,33 @@ class CadreurState:
         self._dirty_since: Optional[float] = None
         self.last_autosave: Optional[float] = None
 
-        # --- runtime controls ---
+        # --- runtime controls (per channel, keyed "{beamer}/{cid}") ---
         self.armed = False  # never persisted
-        self.calibrate = {"front": False, "rear": False}
-        # Manual drive values (PRD calibration = "drive from Cadreur"): while a
-        # beamer is in calibrate mode the operator sets these and they are sent
-        # live; Capture snapshots them into a point. Runtime-only, not persisted.
-        # scale, pos_v (vertical), pos_h (horizontal) are all normalised 0..1
-        # (Millumin maps them); 0.5 = centred on both axes.
-        self.manual = {b: {"scale": 0.5, "pos_v": 0.5, "pos_h": 0.5}
-                       for b in showmod.BEAMER_KEYS}
+        # Channels currently in calibrate mode (driven live). Several may be on
+        # at once, so all layers can be adjusted at one scrim position.
+        self.calibrate: set = set()
+        # Manual drive values ("drive from Cadreur"): scale, pos_v (vertical),
+        # pos_h (horizontal), all normalised 0..1 (0.5 = centred). Lazily created
+        # per channel; runtime-only, never persisted.
+        self.manual: dict = {}
 
-        # --- written by the engine / probes, read by the UI ---
-        self.beamers: dict = {b: {} for b in showmod.BEAMER_KEYS}
+        # --- written by the engine, read by the UI (keyed "{beamer}/{cid}") ---
+        self.channels_state: dict = {}
         self.millumin: dict = {"ok": None, "latency_ms": None, "warning": None}
 
         self._state_path = REPO_ROOT / STATE_FILE
+
+    # --- per-channel runtime helpers -----------------------------------------
+    @staticmethod
+    def chan_key(beamer: str, cid: str) -> str:
+        return f"{beamer}/{cid}"
+
+    def manual_of(self, key: str) -> dict:
+        m = self.manual.get(key)
+        if m is None:
+            m = {"scale": 0.5, "pos_v": 0.5, "pos_h": 0.5}
+            self.manual[key] = m
+        return m
 
     # --- cadreur_state.json (last-opened show only) --------------------------
     def load_last_show_path(self) -> Optional[Path]:
@@ -161,13 +172,13 @@ class CadreurState:
         return {
             "distance": dist,
             "armed": self.armed,
-            "calibrate": dict(self.calibrate),
-            "manual": {b: dict(v) for b, v in self.manual.items()},
-            "settings": dict(doc["settings"]),
+            "settings": {"active_lens_memory": doc["settings"]["active_lens_memory"]},
             "lens_memories": list(doc["lens_memories"]),
             "smoothing": dict(doc["smoothing"]),
-            "looks": [{"id": lk["id"], "name": lk["name"]} for lk in doc["looks"]],
-            "look": showmod.active_look(doc),
+            "beamers": {
+                b: [self._channel_public(b, ch) for ch in doc["beamers"][b]["channels"]]
+                for b in showmod.BEAMER_KEYS
+            },
             "show": {
                 "name": doc["meta"]["name"],
                 "notes": doc["meta"]["notes"],
@@ -176,8 +187,28 @@ class CadreurState:
                 "dirty": self.dirty,
                 "autosave": bool(self.cfg.shows.autosave),
             },
-            "beamers": self.beamers,
             "millumin": dict(self.millumin),
+        }
+
+    def _channel_public(self, b: str, ch: dict) -> dict:
+        """Merge a channel definition with its live runtime state for the UI."""
+        key = self.chan_key(b, ch["id"])
+        cset = showmod.cal_set_for(self.show, b, ch)
+        rt = self.channels_state.get(key, {})
+        return {
+            "id": ch["id"], "name": ch["name"], "enabled": ch["enabled"],
+            "osc_scale": ch["osc_scale"], "osc_posv": ch["osc_posv"], "osc_posh": ch["osc_posh"],
+            "cal_key": showmod.cal_key_for(self.show, b),
+            "points": cset["points"] if cset else [],
+            "trim": cset["trim"] if cset else showmod.default_trim(),
+            "calibrating": key in self.calibrate,
+            "manual": dict(self.manual_of(key)),
+            "reason": rt.get("reason"),
+            "gate": rt.get("gate", False),
+            "clamped": rt.get("clamped"),
+            "values": rt.get("values"),
+            "sending": rt.get("sending", False),
+            "n_points": len(cset["points"]) if cset else 0,
         }
 
     def health(self) -> dict:

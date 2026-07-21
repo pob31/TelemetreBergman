@@ -92,14 +92,23 @@ async def body_of(request: Request) -> dict:
         return {}
 
 
-def active_beamer(b: str) -> tuple[dict, dict]:
-    """(active look, beamer dict) or ShowError."""
+def get_ch(b: str, cid: str) -> dict:
     if b not in showmod.BEAMER_KEYS:
         raise showmod.ShowError(f"Unknown beamer '{b}'.")
-    look = showmod.active_look(state.show)
-    if not look or b not in look["beamers"]:
-        raise showmod.ShowError(f"No {b} beamer in this look.")
-    return look, look["beamers"][b]
+    ch = showmod.get_channel(state.show, b, cid)
+    if ch is None:
+        raise showmod.ShowError(f"Unknown channel '{cid}'.")
+    return ch
+
+
+def _capture_point(b: str, ch: dict, abs_m: float) -> tuple[dict, bool]:
+    """Store the channel's current manual drive values at the current distance."""
+    m = state.manual_of(state.chan_key(b, ch["id"]))
+    cset = showmod.ensure_cal_set(state.show, b, ch)
+    point = {"distance_m": round(abs_m, 3), "scale": round(float(m["scale"]), 4),
+             "pos_x": round(float(m["pos_h"]), 4), "pos_y": round(float(m["pos_v"]), 4)}
+    cset["points"], replaced = interp.insert_point(cset["points"], point)
+    return point, replaced
 
 
 @app.get("/api/health")
@@ -115,39 +124,6 @@ async def arm(request: Request):
     return {"ok": True, "armed": state.armed}
 
 
-@app.post("/api/look")
-async def set_look(request: Request):
-    lid = str((await body_of(request)).get("id") or "")
-    if not showmod.get_look(state.show, lid):
-        return err(f"Unknown look '{lid}'.")
-    state.show["settings"]["active_look"] = lid
-    state.mark_dirty()
-    return {"ok": True}
-
-
-@app.post("/api/looks")
-async def looks_op(request: Request):
-    d = await body_of(request)
-    op = d.get("op")
-    try:
-        if op == "create":
-            lk = showmod.create_look(state.show, str(d.get("name") or "Look"))
-            state.show["settings"]["active_look"] = lk["id"]
-        elif op == "duplicate":
-            lk = showmod.duplicate_look(state.show, str(d.get("id") or ""), d.get("name"))
-            state.show["settings"]["active_look"] = lk["id"]
-        elif op == "rename":
-            showmod.rename_look(state.show, str(d.get("id") or ""), str(d.get("name") or ""))
-        elif op == "delete":
-            showmod.delete_look(state.show, str(d.get("id") or ""))
-        else:
-            return err(f"Unknown op '{op}'.")
-    except showmod.ShowError as e:
-        return err(str(e))
-    state.mark_dirty()
-    return {"ok": True}
-
-
 @app.post("/api/lens_memory")
 async def set_lens_memory(request: Request):
     mem = str((await body_of(request)).get("id") or "")
@@ -158,65 +134,96 @@ async def set_lens_memory(request: Request):
     return {"ok": True}
 
 
-# --- per-beamer --------------------------------------------------------------
+# --- channel management ------------------------------------------------------
 
-@app.post("/api/beamer/{b}/enable")
-async def beamer_enable(b: str, request: Request):
+@app.post("/api/beamer/{b}/channel/add")
+async def channel_add(b: str, request: Request):
     try:
-        _, beamer = active_beamer(b)
+        ch = showmod.add_channel(state.show, b, str((await body_of(request)).get("name") or "") or None)
     except showmod.ShowError as e:
         return err(str(e))
-    beamer["enabled"] = bool((await body_of(request)).get("enabled"))
+    state.mark_dirty()
+    return {"ok": True, "id": ch["id"]}
+
+
+@app.post("/api/channel/{b}/{cid}/delete")
+async def channel_delete(b: str, cid: str):
+    try:
+        showmod.delete_channel(state.show, b, cid)
+    except showmod.ShowError as e:
+        return err(str(e))
+    state.calibrate.discard(state.chan_key(b, cid))
     state.mark_dirty()
     return {"ok": True}
 
 
-@app.post("/api/beamer/{b}/layer")
-async def beamer_layer(b: str, request: Request):
-    name = str((await body_of(request)).get("name") or "")
-    if not showmod.valid_layer_name(name):
-        return err("Invalid layer name (letters, digits, . _ - only — no spaces).")
+@app.post("/api/channel/{b}/{cid}/rename")
+async def channel_rename(b: str, cid: str, request: Request):
     try:
-        _, beamer = active_beamer(b)
+        showmod.rename_channel(state.show, b, cid, str((await body_of(request)).get("name") or ""))
     except showmod.ShowError as e:
         return err(str(e))
-    beamer["layer"] = name
     state.mark_dirty()
     return {"ok": True}
 
 
-@app.post("/api/beamer/{b}/calibrate")
-async def beamer_calibrate(b: str, request: Request):
-    if b not in showmod.BEAMER_KEYS:
-        return err(f"Unknown beamer '{b}'.")
+@app.post("/api/channel/{b}/{cid}/osc")
+async def channel_osc(b: str, cid: str, request: Request):
+    try:
+        showmod.set_channel_osc(state.show, b, cid, await body_of(request))
+    except showmod.ShowError as e:
+        return err(str(e))
+    state.mark_dirty()
+    return {"ok": True}
+
+
+# --- per-channel controls ----------------------------------------------------
+
+@app.post("/api/channel/{b}/{cid}/enable")
+async def channel_enable(b: str, cid: str, request: Request):
+    try:
+        ch = get_ch(b, cid)
+    except showmod.ShowError as e:
+        return err(str(e))
+    ch["enabled"] = bool((await body_of(request)).get("enabled"))
+    state.mark_dirty()
+    return {"ok": True}
+
+
+@app.post("/api/channel/{b}/{cid}/calibrate")
+async def channel_calibrate(b: str, cid: str, request: Request):
+    try:
+        get_ch(b, cid)
+    except showmod.ShowError as e:
+        return err(str(e))
     on = bool((await body_of(request)).get("on"))
-    state.calibrate[b] = on
-    # "Drive from Cadreur": in calibrate mode the engine sends the manual
-    # values live; on exit it glides from them into interpolated playback (the
-    # engine keeps its slews seeded on the manual value, so no readback needed).
-    return {"ok": True, "calibrate": state.calibrate[b]}
+    key = state.chan_key(b, cid)
+    state.calibrate.add(key) if on else state.calibrate.discard(key)
+    return {"ok": True, "calibrate": on}
 
 
-@app.post("/api/beamer/{b}/manual")
-async def beamer_manual(b: str, request: Request):
+@app.post("/api/channel/{b}/{cid}/manual")
+async def channel_manual(b: str, cid: str, request: Request):
     """Set the live drive values (normalised 0..1) sent while calibrating."""
-    if b not in showmod.BEAMER_KEYS:
-        return err(f"Unknown beamer '{b}'.")
+    try:
+        get_ch(b, cid)
+    except showmod.ShowError as e:
+        return err(str(e))
     d = await body_of(request)
-    m = state.manual[b]
-    for key in ("scale", "pos_v", "pos_h"):
-        if key in d:
+    m = state.manual_of(state.chan_key(b, cid))
+    for k in ("scale", "pos_v", "pos_h"):
+        if k in d:
             try:
-                m[key] = min(1.0, max(0.0, float(d[key])))
+                m[k] = min(1.0, max(0.0, float(d[k])))
             except (TypeError, ValueError):
-                return err(f"Bad value for {key}.")
+                return err(f"Bad value for {k}.")
     return {"ok": True, "manual": dict(m)}
 
 
-@app.post("/api/beamer/{b}/capture")
-async def beamer_capture(b: str):
+@app.post("/api/channel/{b}/{cid}/capture")
+async def channel_capture(b: str, cid: str):
     try:
-        look, beamer = active_beamer(b)
+        ch = get_ch(b, cid)
     except showmod.ShowError as e:
         return err(str(e))
     if state.source_state() != "live":
@@ -224,22 +231,38 @@ async def beamer_capture(b: str):
     abs_m, _ = state.distance()
     if abs_m is None:
         return err("No distance received yet.")
-    m = state.manual[b]
-    cset = showmod.ensure_cal_set(state.show, look, b)
-    point = {"distance_m": round(abs_m, 3), "scale": round(float(m["scale"]), 4),
-             "pos_x": round(float(m["pos_h"]), 4), "pos_y": round(float(m["pos_v"]), 4)}
-    cset["points"], replaced = interp.insert_point(cset["points"], point)
+    point, replaced = _capture_point(b, ch, abs_m)
     state.mark_dirty()
     return {"ok": True, "point": point, "replaced": replaced}
 
 
-@app.post("/api/beamer/{b}/points")
-async def beamer_points(b: str, request: Request):
+@app.post("/api/capture_all")
+async def capture_all():
+    """Capture a point at the current distance for every channel in calibrate
+    mode — 'fit every layer at this scrim position, then capture in one go'."""
+    if state.source_state() != "live":
+        return err("Distance is stale — capture disabled.")
+    abs_m, _ = state.distance()
+    if abs_m is None:
+        return err("No distance received yet.")
+    n = 0
+    for b in showmod.BEAMER_KEYS:
+        for ch in showmod.channels_of(state.show, b):
+            if state.chan_key(b, ch["id"]) in state.calibrate:
+                _capture_point(b, ch, abs_m)
+                n += 1
+    if n:
+        state.mark_dirty()
+    return {"ok": True, "count": n, "distance_m": round(abs_m, 3)}
+
+
+@app.post("/api/channel/{b}/{cid}/points")
+async def channel_points(b: str, cid: str, request: Request):
     d = await body_of(request)
     op = d.get("op")
     try:
-        look, _ = active_beamer(b)
-        cset = showmod.ensure_cal_set(state.show, look, b)
+        ch = get_ch(b, cid)
+        cset = showmod.ensure_cal_set(state.show, b, ch)
     except showmod.ShowError as e:
         return err(str(e))
     pts = cset["points"]
@@ -261,11 +284,11 @@ async def beamer_points(b: str, request: Request):
                     return err("Point needs numeric distance_m, scale, pos_x, pos_y.")
                 del pts[idx]
                 cset["points"], _ = interp.insert_point(pts, p)
-            else:  # recapture: current distance + current manual drive values
+            else:  # recapture at current distance + current manual values
                 if state.source_state() != "live":
                     return err("Distance is stale — capture disabled.")
                 abs_m, _ = state.distance()
-                m = state.manual[b]
+                m = state.manual_of(state.chan_key(b, cid))
                 del pts[idx]
                 p = {"distance_m": round(abs_m, 3), "scale": round(float(m["scale"]), 4),
                      "pos_x": round(float(m["pos_h"]), 4), "pos_y": round(float(m["pos_v"]), 4)}
@@ -278,12 +301,12 @@ async def beamer_points(b: str, request: Request):
     return {"ok": True, "points": cset["points"]}
 
 
-@app.post("/api/beamer/{b}/trim")
-async def beamer_trim(b: str, request: Request):
+@app.post("/api/channel/{b}/{cid}/trim")
+async def channel_trim(b: str, cid: str, request: Request):
     d = await body_of(request)
     try:
-        look, _ = active_beamer(b)
-        cset = showmod.ensure_cal_set(state.show, look, b)
+        ch = get_ch(b, cid)
+        cset = showmod.ensure_cal_set(state.show, b, ch)
     except showmod.ShowError as e:
         return err(str(e))
     for k in ("scale_mul", "dx_px", "dy_px"):
@@ -296,11 +319,11 @@ async def beamer_trim(b: str, request: Request):
     return {"ok": True, "trim": cset["trim"]}
 
 
-@app.post("/api/beamer/{b}/trim/bake")
-async def beamer_trim_bake(b: str):
+@app.post("/api/channel/{b}/{cid}/trim/bake")
+async def channel_trim_bake(b: str, cid: str):
     try:
-        look, _ = active_beamer(b)
-        cset = showmod.ensure_cal_set(state.show, look, b)
+        ch = get_ch(b, cid)
+        cset = showmod.ensure_cal_set(state.show, b, ch)
     except showmod.ShowError as e:
         return err(str(e))
     cset["points"] = interp.bake_trim(cset["points"], cset["trim"])
@@ -309,11 +332,11 @@ async def beamer_trim_bake(b: str):
     return {"ok": True, "points": cset["points"]}
 
 
-@app.post("/api/beamer/{b}/trim/reset")
-async def beamer_trim_reset(b: str):
+@app.post("/api/channel/{b}/{cid}/trim/reset")
+async def channel_trim_reset(b: str, cid: str):
     try:
-        look, _ = active_beamer(b)
-        cset = showmod.ensure_cal_set(state.show, look, b)
+        ch = get_ch(b, cid)
+        cset = showmod.ensure_cal_set(state.show, b, ch)
     except showmod.ShowError as e:
         return err(str(e))
     cset["trim"] = showmod.default_trim()
@@ -341,28 +364,9 @@ async def set_smoothing(request: Request):
 
 @app.post("/api/test_millumin")
 async def test_millumin():
-    if not cfg.millumin.feedback:
-        # Custom Interaction addresses are send-only (no /? readback).
-        return {"ok": True, "note": "send-only", "latency_ms": None, "layer": None}
-    look = showmod.active_look(state.show)
-    layer = None
-    if look:
-        for b in showmod.BEAMER_KEYS:
-            beamer = look["beamers"].get(b)
-            if beamer and showmod.valid_layer_name(beamer["layer"]):
-                layer = beamer["layer"]
-                break
-    if not layer:
-        return err("No beamer with a valid layer name in this look.")
-    res = await asyncio.to_thread(io.query, layer)
-    if res is None:
-        state.millumin = {"ok": False, "latency_ms": None, "warning": None}
-        return JSONResponse({
-            "ok": False, "error": "timeout", "layer": layer,
-            "checklist": CAPTURE_CHECKLIST.format(layer=layer, port=cfg.millumin.feedback_port),
-        }, status_code=504)
-    state.millumin = {"ok": True, "latency_ms": res["latency_ms"], "warning": None}
-    return {"ok": True, "layer": layer, "latency_ms": res["latency_ms"]}
+    # Custom Interaction addresses are send-only (no /? readback); feedback is
+    # off by default, so there is nothing to round-trip — report send-only.
+    return {"ok": True, "note": "send-only", "latency_ms": None}
 
 
 # --- persistence -------------------------------------------------------------
@@ -407,7 +411,7 @@ async def load(request: Request):
     except showmod.ShowError as e:
         return err(str(e))
     state.armed = False  # DISARMED after any show load/import (PRD §10)
-    state.calibrate = {b: False for b in showmod.BEAMER_KEYS}
+    state.calibrate = set()
     state.show = doc
     state.show_path = path
     state.dirty = False
@@ -445,7 +449,7 @@ async def import_show(request: Request):
     except Exception:
         return err("Not a JSON file.")
     state.armed = False
-    state.calibrate = {b: False for b in showmod.BEAMER_KEYS}
+    state.calibrate = set()
     state.show = doc
     state.show_path = None  # imported: operator names it with Save as
     state.mark_dirty()

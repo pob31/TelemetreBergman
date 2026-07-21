@@ -21,6 +21,14 @@ implement the app from this file alone, without asking anything else.
 >    calibrate mode **drives** live manual values (three sliders) that Capture snapshots —
 >    there is no Millumin readback. Feedback listener + armed probe are **off by default**
 >    (`[millumin] feedback = false`). The travel mapping measured on stage is near-linear.
+> 4. **Schema v2 — Looks removed, channels instead.** Each beamer holds a flat list of
+>    **channels** (4 front + 4 rear by default), one per Millumin layer, all driven
+>    continuously; the operator selects a mode by layer visibility in Millumin. Each channel
+>    has its own OSC addresses + calibration (front keyed by lens memory, rear a single set).
+>    Calibrate is **per channel, several at once**; `POST /api/capture_all` captures every
+>    calibrating channel at the current distance (fit all layers at one scrim position, then
+>    capture). Endpoints are `/api/channel/{beamer}/{cid}/…`; v1 (Looks) files auto-migrate
+>    (active look → channel 1). Sections 6–12 below describe the superseded Looks model.
 
 ---
 

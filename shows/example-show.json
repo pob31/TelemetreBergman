@@ -1,49 +1,53 @@
 {
   "app": "cadreur",
-  "version": 1,
+  "version": 2,
   "meta": {
-    "name": "Bergman création 2026",
-    "saved_at": "2026-07-19T14:03:00Z",
-    "notes": "sensor on flybar 4 — re-rigging it invalidates all points"
+    "name": "Exemple Bergman",
+    "saved_at": null,
+    "notes": "Exemple v2 — capteur sur perche ; re-riguer le capteur invalide tous les points."
   },
-  "settings": { "active_look": "cinemascope", "active_lens_memory": "M1" },
+  "settings": { "active_lens_memory": "M1" },
   "lens_memories": ["M1", "M2", "M3"],
   "smoothing": {
     "ema_tau_s": 5.0,
-    "deadband_scale": 0.0005, "deadband_px": 0.5,
-    "slew_scale_per_s": 0.05, "slew_px_per_s": 50.0,
+    "deadband_scale": 0.0005,
+    "slew_scale_per_s": 0.05,
     "refresh_hz": 1.0
   },
-  "looks": [
-    {
-      "id": "cinemascope",
-      "name": "Cinémascope",
-      "beamers": {
-        "front": {
-          "layer": "scope-front",
+  "beamers": {
+    "front": {
+      "channels": [
+        {
+          "id": "front-1",
+          "name": "Scope",
           "enabled": true,
+          "osc_scale": "/front/scale/1",
+          "osc_posv": "/front/positionV/1",
+          "osc_posh": "/front/positionH/1",
           "calibrations": {
             "M1": {
               "interp": "linear",
               "trim": { "scale_mul": 1.0, "dx_px": 0.0, "dy_px": 0.0 },
               "points": [
-                { "distance_m": 2.10, "scale": 0.620, "pos_x": 960.0, "pos_y": 540.0 },
-                { "distance_m": 3.20, "scale": 0.535, "pos_x": 960.0, "pos_y": 574.0 },
-                { "distance_m": 4.30, "scale": 0.458, "pos_x": 960.0, "pos_y": 610.0 }
+                { "distance_m": 0.45, "scale": 0.704, "pos_x": 0.5, "pos_y": 0.663 },
+                { "distance_m": 4.12, "scale": 0.785, "pos_x": 0.5, "pos_y": 0.636 },
+                { "distance_m": 9.95, "scale": 0.923, "pos_x": 0.5, "pos_y": 0.596 }
               ]
             }
           }
         },
-        "rear": {
-          "layer": "scope-rear",
-          "enabled": true,
-          "calibrations": {
-            "default": { "interp": "linear",
-                         "trim": { "scale_mul": 1.0, "dx_px": 0.0, "dy_px": 0.0 },
-                         "points": [] }
-          }
-        }
-      }
+        { "id": "front-2", "name": "Face 2", "enabled": true, "osc_scale": "/front/scale/2", "osc_posv": "/front/positionV/2", "osc_posh": "/front/positionH/2", "calibrations": {} },
+        { "id": "front-3", "name": "Face 3", "enabled": true, "osc_scale": "/front/scale/3", "osc_posv": "/front/positionV/3", "osc_posh": "/front/positionH/3", "calibrations": {} },
+        { "id": "front-4", "name": "Face 4", "enabled": true, "osc_scale": "/front/scale/4", "osc_posv": "/front/positionV/4", "osc_posh": "/front/positionH/4", "calibrations": {} }
+      ]
+    },
+    "rear": {
+      "channels": [
+        { "id": "rear-1", "name": "Lointain 1", "enabled": true, "osc_scale": "/retro/scale/1", "osc_posv": "/retro/positionV/1", "osc_posh": "/retro/positionH/1", "calibrations": {} },
+        { "id": "rear-2", "name": "Lointain 2", "enabled": true, "osc_scale": "/retro/scale/2", "osc_posv": "/retro/positionV/2", "osc_posh": "/retro/positionH/2", "calibrations": {} },
+        { "id": "rear-3", "name": "Lointain 3", "enabled": true, "osc_scale": "/retro/scale/3", "osc_posv": "/retro/positionV/3", "osc_posh": "/retro/positionH/3", "calibrations": {} },
+        { "id": "rear-4", "name": "Lointain 4", "enabled": true, "osc_scale": "/retro/scale/4", "osc_posv": "/retro/positionV/4", "osc_posh": "/retro/positionH/4", "calibrations": {} }
+      ]
     }
-  ]
+  }
 }

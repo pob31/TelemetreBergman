@@ -1,9 +1,17 @@
-"""Show file: schema, load/save, rules of PRD §6.
+"""Show file: schema, load/save, migration.
+
+Schema v2 (2026-07-21): no Looks. Each beamer (front/rear) carries a flat list
+of **channels** — one per Millumin layer — driven continuously and simultaneously
+(the operator selects a mode by layer visibility in Millumin, not by switching in
+Cadreur). Each channel has its own OSC addresses (scale / positionH / positionV,
+all normalised 0..1) and its own calibration: keyed by lens memory on the front
+(the projector has lens memories), single "default" set on the rear.
 
 One JSON file = one show — everything the operator edits, including smoothing.
-Armed is NEVER persisted (it is runtime state, and save writes only the known
-schema). Loads are defensive: unknown keys ignored, points sorted + deduped,
-a bad reference falls back to the first valid one.
+Armed is NEVER persisted. Loads are defensive: unknown keys ignored, points
+sorted + deduped, bad references repaired. A v1 (Looks) file is migrated: the
+active look's front/rear become channel 1, the rest are filled with fresh
+channels.
 """
 from __future__ import annotations
 
@@ -20,28 +28,29 @@ from .interp import normalize_points
 
 log = logging.getLogger("cadreur.show")
 
-VERSION = 1
+VERSION = 2
 BEAMER_KEYS = ("front", "rear")
-REAR_CAL_KEY = "default"  # rear has a single calibration set per look
+REAR_CAL_KEY = "default"  # rear has no lens memories: one calibration per channel
+DEFAULT_CHANNELS = 4  # 4 front + 4 rear, per the show design
+OSC_PREFIX = {"front": "front", "rear": "retro"}
+CHANNEL_NAME = {"front": "Face", "rear": "Lointain"}
 LAYER_RE = re.compile(r"^[A-Za-z0-9._-]+$")  # spaces break OSC addresses
+OSC_ADDR_RE = re.compile(r"^/[A-Za-z0-9._:/-]+$")  # a plausible OSC address
 
 DEFAULT_SMOOTHING = {
     "ema_tau_s": 5.0,
     "deadband_scale": 0.0005,
-    "deadband_px": 0.5,
     "slew_scale_per_s": 0.05,
-    "slew_px_per_s": 50.0,
     "refresh_hz": 1.0,
 }
 SMOOTHING_LIMITS = {  # operator-tunable ranges (Advanced drawer)
     "ema_tau_s": (0.0, 30.0),
     "deadband_scale": (0.0, 0.1),
-    "deadband_px": (0.0, 50.0),
     "slew_scale_per_s": (0.001, 10.0),
-    "slew_px_per_s": (1.0, 10000.0),
     "refresh_hz": (0.1, 20.0),
 }
 DEFAULT_LENS_MEMORIES = ["M1", "M2", "M3"]
+OSC_KEYS = ("osc_scale", "osc_posv", "osc_posh")
 
 
 class ShowError(ValueError):
@@ -52,6 +61,10 @@ def valid_layer_name(name: str) -> bool:
     return bool(LAYER_RE.match(name or ""))
 
 
+def valid_osc_addr(addr: str) -> bool:
+    return bool(OSC_ADDR_RE.match(addr or ""))
+
+
 def _utc_now_iso() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
@@ -59,7 +72,7 @@ def _utc_now_iso() -> str:
 def slugify(name: str) -> str:
     s = unicodedata.normalize("NFKD", name or "").encode("ascii", "ignore").decode()
     s = re.sub(r"[^a-z0-9]+", "-", s.lower()).strip("-")
-    return s or "look"
+    return s or "chan"
 
 
 def unique_id(base: str, taken: List[str]) -> str:
@@ -71,7 +84,7 @@ def unique_id(base: str, taken: List[str]) -> str:
     return f"{base}-{n}"
 
 
-# --- schema ------------------------------------------------------------------
+# --- schema pieces -----------------------------------------------------------
 
 def default_trim() -> dict:
     return {"scale_mul": 1.0, "dx_px": 0.0, "dy_px": 0.0}
@@ -81,25 +94,21 @@ def default_cal_set() -> dict:
     return {"interp": "linear", "trim": default_trim(), "points": []}
 
 
-# Per-beamer OSC send addresses. Custom Millumin Interaction bindings by default
-# (scale is a 0..1 float, position is vertical-only in pixels); editable per show
-# so reverting to the standard /layer:NAME API is a data change, not a code change.
-OSC_DEFAULTS = {
-    "front": {"osc_scale": "/front/scale/1", "osc_posv": "/front/positionV/1",
-              "osc_posh": "/front/positionH/1"},
-    "rear": {"osc_scale": "/retro/scale/1", "osc_posv": "/retro/positionV/1",
-             "osc_posh": "/retro/positionH/1"},
-}
-OSC_KEYS = ("osc_scale", "osc_posv", "osc_posh")
+def default_osc(beamer: str, index: int) -> dict:
+    p = OSC_PREFIX.get(beamer, beamer)
+    return {"osc_scale": f"/{p}/scale/{index}",
+            "osc_posv": f"/{p}/positionV/{index}",
+            "osc_posh": f"/{p}/positionH/{index}"}
 
 
-def default_osc(b: str) -> dict:
-    return dict(OSC_DEFAULTS.get(b, {k: "" for k in OSC_KEYS}))
-
-
-def default_beamer(b: str) -> dict:
-    o = default_osc(b)
-    return {"layer": b, "enabled": True, **o, "calibrations": {}}
+def default_channel(beamer: str, index: int) -> dict:
+    return {
+        "id": f"{beamer}-{index}",
+        "name": f"{CHANNEL_NAME.get(beamer, beamer.title())} {index}",
+        "enabled": True,
+        **default_osc(beamer, index),
+        "calibrations": {},
+    }
 
 
 def new_show(name: str = "Nouveau spectacle") -> dict:
@@ -107,21 +116,17 @@ def new_show(name: str = "Nouveau spectacle") -> dict:
         "app": "cadreur",
         "version": VERSION,
         "meta": {"name": name, "saved_at": None, "notes": ""},
-        "settings": {"active_look": "look-1", "active_lens_memory": "M1"},
+        "settings": {"active_lens_memory": "M1"},
         "lens_memories": list(DEFAULT_LENS_MEMORIES),
         "smoothing": dict(DEFAULT_SMOOTHING),
-        "looks": [
-            {
-                "id": "look-1",
-                "name": "Look 1",
-                "beamers": {
-                    "front": default_beamer("front"),
-                    "rear": default_beamer("rear"),
-                },
-            }
-        ],
+        "beamers": {
+            b: {"channels": [default_channel(b, i) for i in range(1, DEFAULT_CHANNELS + 1)]}
+            for b in BEAMER_KEYS
+        },
     }
 
+
+# --- normalization -----------------------------------------------------------
 
 def _norm_trim(raw) -> dict:
     raw = raw if isinstance(raw, dict) else {}
@@ -143,32 +148,98 @@ def _norm_cal_set(raw) -> dict:
     }
 
 
-def _norm_beamer(raw, b: str) -> Optional[dict]:
-    if not isinstance(raw, dict):
-        return None
-    layer = raw.get("layer")
-    if not isinstance(layer, str):
-        layer = b
-    o = default_osc(b)
+def _norm_channel(raw, beamer: str, index: int, taken: List[str]) -> dict:
+    raw = raw if isinstance(raw, dict) else {}
+    d = default_channel(beamer, index)
+    cid = str(raw.get("id") or d["id"])
+    cid = unique_id(cid, taken)
+    name = str(raw.get("name") or d["name"])
     cals = raw.get("calibrations")
     cals = cals if isinstance(cals, dict) else {}
     out = {
-        "layer": layer,
+        "id": cid,
+        "name": name,
         "enabled": bool(raw.get("enabled", True)),
         "calibrations": {str(k): _norm_cal_set(v) for k, v in cals.items()},
     }
     for k in OSC_KEYS:
         v = raw.get(k)
-        out[k] = v if isinstance(v, str) else o[k]
+        out[k] = v if isinstance(v, str) and v else d[k]
     return out
 
 
-def normalize(data) -> dict:
-    """Validated deep copy holding only the known schema (PRD §6 rules).
+def _norm_beamer(raw, beamer: str) -> dict:
+    raw = raw if isinstance(raw, dict) else {}
+    raw_channels = raw.get("channels")
+    raw_channels = raw_channels if isinstance(raw_channels, list) else []
+    channels: List[dict] = []
+    taken: List[str] = []
+    for i, rc in enumerate(raw_channels, start=1):
+        ch = _norm_channel(rc, beamer, i, taken)
+        taken.append(ch["id"])
+        channels.append(ch)
+    if not channels:  # a beamer always has at least the default set of channels
+        channels = [default_channel(beamer, i) for i in range(1, DEFAULT_CHANNELS + 1)]
+    return {"channels": channels}
 
-    Raises ShowError on a missing/newer version or a structurally hopeless
-    document. Anything recoverable is repaired silently (defensive I/O).
-    """
+
+def _norm_smoothing(raw) -> dict:
+    smoothing = dict(DEFAULT_SMOOTHING)
+    raw = raw if isinstance(raw, dict) else {}
+    for k in smoothing:
+        try:
+            lo, hi = SMOOTHING_LIMITS[k]
+            smoothing[k] = min(hi, max(lo, float(raw.get(k, smoothing[k]))))
+        except (TypeError, ValueError):
+            pass
+    return smoothing
+
+
+def _migrate_v1(data: dict) -> dict:
+    """v1 (Looks) -> v2 (channels). The active look's front/rear beamer becomes
+    channel 1 of each (osc + calibrations preserved); channels 2..N are fresh.
+    Other looks are dropped."""
+    looks = data.get("looks") or []
+    settings = data.get("settings") if isinstance(data.get("settings"), dict) else {}
+    active_id = settings.get("active_look")
+    src = None
+    for lk in looks:
+        if isinstance(lk, dict) and lk.get("id") == active_id:
+            src = lk
+            break
+    if src is None and looks and isinstance(looks[0], dict):
+        src = looks[0]
+    src_beamers = (src or {}).get("beamers") if isinstance((src or {}).get("beamers"), dict) else {}
+
+    beamers = {}
+    for b in BEAMER_KEYS:
+        chans = [default_channel(b, i) for i in range(1, DEFAULT_CHANNELS + 1)]
+        old = src_beamers.get(b)
+        if isinstance(old, dict):  # carry the old single beamer into channel 1
+            ch1 = chans[0]
+            cals = old.get("calibrations")
+            if isinstance(cals, dict):
+                ch1["calibrations"] = cals
+            for k in OSC_KEYS:  # keep whatever addresses were configured
+                if isinstance(old.get(k), str) and old[k]:
+                    ch1[k] = old[k]
+        beamers[b] = {"channels": chans}
+    log.info("Migrated a v1 show (Looks) to v2 channels: active look -> channel 1")
+    return {
+        "app": "cadreur",
+        "version": VERSION,
+        "meta": data.get("meta") if isinstance(data.get("meta"), dict) else {},
+        "settings": {"active_lens_memory": settings.get("active_lens_memory", "M1")},
+        "lens_memories": data.get("lens_memories") or list(DEFAULT_LENS_MEMORIES),
+        "smoothing": data.get("smoothing") or {},
+        "beamers": beamers,
+    }
+
+
+def normalize(data) -> dict:
+    """Validated deep copy holding only the known schema. Raises ShowError on a
+    missing/newer version. A v1 document is migrated. Recoverable issues are
+    repaired silently (defensive I/O)."""
     if not isinstance(data, dict):
         raise ShowError("Not a Cadreur show file (expected a JSON object).")
     v = data.get("version")
@@ -178,7 +249,8 @@ def normalize(data) -> dict:
         raise ShowError(
             f"Show file version {v} was made by a newer Cadreur (this build reads v{VERSION})."
         )
-    # v < VERSION would run migrations here; v1 is the first schema.
+    if v < 2:
+        data = _migrate_v1(data)
 
     meta_raw = data.get("meta") if isinstance(data.get("meta"), dict) else {}
     settings_raw = data.get("settings") if isinstance(data.get("settings"), dict) else {}
@@ -187,38 +259,9 @@ def normalize(data) -> dict:
     if not memories:
         memories = list(DEFAULT_LENS_MEMORIES)
 
-    smoothing = dict(DEFAULT_SMOOTHING)
-    raw_smooth = data.get("smoothing") if isinstance(data.get("smoothing"), dict) else {}
-    for k in smoothing:
-        try:
-            lo, hi = SMOOTHING_LIMITS[k]
-            smoothing[k] = min(hi, max(lo, float(raw_smooth.get(k, smoothing[k]))))
-        except (TypeError, ValueError):
-            pass
+    raw_beamers = data.get("beamers") if isinstance(data.get("beamers"), dict) else {}
+    beamers = {b: _norm_beamer(raw_beamers.get(b), b) for b in BEAMER_KEYS}
 
-    looks: List[dict] = []
-    ids: List[str] = []
-    for raw_look in data.get("looks") or []:
-        if not isinstance(raw_look, dict):
-            continue
-        name = str(raw_look.get("name") or "Look")
-        lid = str(raw_look.get("id") or slugify(name))
-        lid = unique_id(lid, ids)
-        ids.append(lid)
-        beamers = {}
-        raw_beamers = raw_look.get("beamers") if isinstance(raw_look.get("beamers"), dict) else {}
-        for b in BEAMER_KEYS:  # keys are exactly front/rear; each optional
-            nb = _norm_beamer(raw_beamers.get(b), b) if b in raw_beamers else None
-            if nb is not None:
-                beamers[b] = nb
-        looks.append({"id": lid, "name": name, "beamers": beamers})
-    if not looks:
-        looks = new_show()["looks"]
-        ids = [lk["id"] for lk in looks]
-
-    active_look = str(settings_raw.get("active_look") or "")
-    if active_look not in ids:
-        active_look = ids[0]
     active_mem = str(settings_raw.get("active_lens_memory") or "")
     if active_mem not in memories:
         active_mem = memories[0]
@@ -231,98 +274,105 @@ def normalize(data) -> dict:
             "saved_at": meta_raw.get("saved_at"),
             "notes": str(meta_raw.get("notes") or ""),
         },
-        "settings": {"active_look": active_look, "active_lens_memory": active_mem},
+        "settings": {"active_lens_memory": active_mem},
         "lens_memories": memories,
-        "smoothing": smoothing,
-        "looks": looks,
+        "smoothing": _norm_smoothing(data.get("smoothing")),
+        "beamers": beamers,
     }
 
 
 # --- helpers on a normalized show -------------------------------------------
 
-def get_look(data: dict, look_id: str) -> Optional[dict]:
-    for lk in data["looks"]:
-        if lk["id"] == look_id:
-            return lk
+def channels_of(data: dict, beamer: str) -> List[dict]:
+    return data["beamers"][beamer]["channels"]
+
+
+def get_channel(data: dict, beamer: str, cid: str) -> Optional[dict]:
+    for ch in channels_of(data, beamer):
+        if ch["id"] == cid:
+            return ch
     return None
 
 
-def active_look(data: dict) -> Optional[dict]:
-    return get_look(data, data["settings"]["active_look"])
-
-
 def cal_key_for(data: dict, beamer: str) -> str:
-    """Front resolves via the global active lens memory; rear always uses the
-    reserved 'default' key — one uniform code path."""
+    """Front resolves via the global active lens memory; rear uses the reserved
+    'default' key — one uniform code path."""
     return data["settings"]["active_lens_memory"] if beamer == "front" else REAR_CAL_KEY
 
 
-def cal_set_for(data: dict, look: Optional[dict], beamer: str) -> Optional[dict]:
-    """The active calibration set, or None (=> that beamer is inhibited).
+def cal_set_for(data: dict, beamer: str, channel: dict) -> Optional[dict]:
+    """The channel's active calibration set, or None (=> channel inhibited).
     Never falls back to another memory's set."""
-    if not look:
+    if not channel:
         return None
-    b = look["beamers"].get(beamer)
-    if not b:
-        return None
-    return b["calibrations"].get(cal_key_for(data, beamer))
+    return channel["calibrations"].get(cal_key_for(data, beamer))
 
 
-def ensure_cal_set(data: dict, look: dict, beamer: str) -> dict:
-    """Get-or-create the active set (capture creates it lazily)."""
-    b = look["beamers"].get(beamer)
-    if b is None:
-        raise ShowError(f"No {beamer} beamer in this look.")
+def ensure_cal_set(data: dict, beamer: str, channel: dict) -> dict:
+    """Get-or-create the channel's active set (capture creates it lazily)."""
     key = cal_key_for(data, beamer)
-    if key not in b["calibrations"]:
-        b["calibrations"][key] = default_cal_set()
-    return b["calibrations"][key]
+    if key not in channel["calibrations"]:
+        channel["calibrations"][key] = default_cal_set()
+    return channel["calibrations"][key]
 
 
-# --- look operations ---------------------------------------------------------
+# --- channel operations ------------------------------------------------------
 
-def create_look(data: dict, name: str) -> dict:
-    ids = [lk["id"] for lk in data["looks"]]
-    lid = unique_id(slugify(name), ids)
-    look = {
-        "id": lid,
-        "name": name or "Look",
-        "beamers": {"front": default_beamer("front"), "rear": default_beamer("rear")},
-    }
-    data["looks"].append(look)
-    return look
-
-
-def duplicate_look(data: dict, look_id: str, name: Optional[str] = None) -> dict:
-    src = get_look(data, look_id)
-    if not src:
-        raise ShowError(f"Unknown look '{look_id}'.")
-    ids = [lk["id"] for lk in data["looks"]]
-    new_name = name or f"{src['name']} (copie)"
-    copy = json.loads(json.dumps(src))
-    copy["id"] = unique_id(slugify(new_name), ids)
-    copy["name"] = new_name
-    data["looks"].append(copy)
-    return copy
+def _next_osc_index(data: dict, beamer: str) -> int:
+    """Lowest positive index not already used by a channel's scale address."""
+    used = set()
+    p = OSC_PREFIX.get(beamer, beamer)
+    for ch in channels_of(data, beamer):
+        m = re.match(rf"^/{re.escape(p)}/scale/(\d+)$", ch.get("osc_scale", ""))
+        if m:
+            used.add(int(m.group(1)))
+    i = 1
+    while i in used:
+        i += 1
+    return i
 
 
-def rename_look(data: dict, look_id: str, name: str) -> dict:
-    look = get_look(data, look_id)
-    if not look:
-        raise ShowError(f"Unknown look '{look_id}'.")
-    look["name"] = name or look["name"]
-    return look
+def add_channel(data: dict, beamer: str, name: Optional[str] = None) -> dict:
+    if beamer not in BEAMER_KEYS:
+        raise ShowError(f"Unknown beamer '{beamer}'.")
+    idx = _next_osc_index(data, beamer)
+    ch = default_channel(beamer, idx)
+    ch["id"] = unique_id(ch["id"], [c["id"] for c in channels_of(data, beamer)])
+    if name:
+        ch["name"] = name
+    channels_of(data, beamer).append(ch)
+    return ch
 
 
-def delete_look(data: dict, look_id: str) -> None:
-    look = get_look(data, look_id)
-    if not look:
-        raise ShowError(f"Unknown look '{look_id}'.")
-    if len(data["looks"]) <= 1:
-        raise ShowError("Cannot delete the last look.")
-    data["looks"].remove(look)
-    if data["settings"]["active_look"] == look_id:
-        data["settings"]["active_look"] = data["looks"][0]["id"]
+def delete_channel(data: dict, beamer: str, cid: str) -> None:
+    chans = channels_of(data, beamer)
+    ch = get_channel(data, beamer, cid)
+    if ch is None:
+        raise ShowError(f"Unknown channel '{cid}'.")
+    if len(chans) <= 1:
+        raise ShowError("Cannot delete the last channel of a beamer.")
+    chans.remove(ch)
+
+
+def rename_channel(data: dict, beamer: str, cid: str, name: str) -> dict:
+    ch = get_channel(data, beamer, cid)
+    if ch is None:
+        raise ShowError(f"Unknown channel '{cid}'.")
+    ch["name"] = name or ch["name"]
+    return ch
+
+
+def set_channel_osc(data: dict, beamer: str, cid: str, addrs: dict) -> dict:
+    ch = get_channel(data, beamer, cid)
+    if ch is None:
+        raise ShowError(f"Unknown channel '{cid}'.")
+    for k in OSC_KEYS:
+        if k in addrs:
+            a = str(addrs[k])
+            if not valid_osc_addr(a):
+                raise ShowError(f"Invalid OSC address for {k}: '{a}'.")
+            ch[k] = a
+    return ch
 
 
 # --- files -------------------------------------------------------------------
