@@ -20,8 +20,8 @@ so the stage manager can nudge the cart onto a mark in real time.
 this readout's SSE stream and continuously rescales/repositions **Millumin**
 layers so front- and rear-projected video stays fitted to the travelling scrim
 (4+4 continuously-driven channels per beamer, front lens memories, drive-from-
-Cadreur calibration). Spec + as-built note:
-[`documentation/PRD-cadreur.md`](documentation/PRD-cadreur.md).
+Cadreur calibration). Spec: [`documentation/PRD-cadreur.md`](documentation/PRD-cadreur.md).
+**Guide d'exploitation en français : [`LISEZMOI.md`](LISEZMOI.md).**
 
 Run on the show Mac (Python ≥ 3.11):
 
