@@ -441,7 +441,8 @@ stale_after_ms = 1500
 [millumin]
 host = "127.0.0.1"
 port = 5000                     # Millumin OSC input
-feedback_port = 8000            # must match Millumin's API-feedback destination
+feedback = false                # off for custom addresses (as-built); see the note in §Intro
+feedback_port = 8001            # only used when feedback = true; must match Millumin's dest
 feedback_timeout_ms = 1500
 
 [web]

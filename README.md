@@ -19,8 +19,9 @@ so the stage manager can nudge the cart onto a mark in real time.
 **Cadreur Bergman** is the Mac-side companion (in `src/cadreur/`): it consumes
 this readout's SSE stream and continuously rescales/repositions **Millumin**
 layers so front- and rear-projected video stays fitted to the travelling scrim
-(lens memories, per-look calibration points, capture-from-Millumin workflow).
-Spec: [`documentation/PRD-cadreur.md`](documentation/PRD-cadreur.md).
+(4+4 continuously-driven channels per beamer, front lens memories, drive-from-
+Cadreur calibration). Spec + as-built note:
+[`documentation/PRD-cadreur.md`](documentation/PRD-cadreur.md).
 
 Run on the show Mac (Python ≥ 3.11):
 
@@ -44,6 +45,31 @@ No command line at show time: `./scripts/make_app.sh` builds a double-clickable
 launches `cadreur-gui` and logs to `cadreur_gui.log`. Python: any 3.11+ — the
 plain macOS installer from <https://www.python.org/downloads/> is fine
 (`python3.13` afterwards); needs internet once for the `pip install`.
+
+### Backup and moving the folder
+
+The code is **location-independent** (paths are resolved at runtime), so the
+folder can be moved or copied anywhere — e.g. `~/Documents/SDLVC/TelemetreBergman`
+— or to a backup machine. Only one thing does **not** survive a move or a copy:
+**`.venv/`** (it holds absolute paths). Recreate it in place:
+
+```bash
+cd <new-folder>
+rm -rf .venv
+python3 -m venv .venv && ./.venv/bin/pip install -e '.[gui]'
+./scripts/make_app.sh          # rebuild Cadreur.app with clean paths
+```
+
+Then re-drag `Cadreur.app` to the Dock from the new location (the old Dock
+reference breaks), and either delete `cadreur_state.json` or just **Load** your
+show once after launch — that file remembers the last show's *absolute* path.
+
+What travels unchanged — and is what you actually need to back up — is
+**`shows/*.json`** (your calibrations) and **`cadreur.toml`** (this machine's Pi
+URL / ports); nothing in them is edited on a move. For a cold backup, copy the
+folder while **excluding** `.venv/`, `__pycache__/`, and `*.log`. Since the code
+lives on GitHub, a fresh machine can instead `git clone` the repo, recreate the
+venv, and just copy over `shows/` + `cadreur.toml`.
 
 Dev loop without the rig: `scripts/sim_telemetre.py` (fake Pi SSE) +
 `scripts/millumin_sim.py` (fake Millumin OSC, prints all traffic).
@@ -149,7 +175,8 @@ src/telemetre/   frames.py filters.py serial_reader.py state.py osc_out.py confi
 src/cadreur/     Mac companion (Millumin scrim tracker): engine.py millumin.py show.py … + web/
 web/             index.html app.js style.css   (EventSource UI)
 systemd/         telemetre.service
-scripts/         install.sh deploy.sh detect_serial.py net_sniff.py sim_telemetre.py millumin_sim.py
+scripts/         install.sh deploy.sh detect_serial.py net_sniff.py
+                 cadreur: make_app.sh sim_telemetre.py millumin_sim.py osc_test.py drive_demo.py analyze_points.py
 tests/           test_frames.py test_filters.py test_interp.py test_smoothing.py test_show.py test_engine.py
 shows/           cadreur show files (gitignored except example-show.json)
 documentation/   TF02-Pro datasheets/manual · PRD-cadreur.md (Mac companion app spec)
