@@ -501,8 +501,8 @@
 
     const trim = ch.trim || { scale_mul: 1, dx_px: 0, dy_px: 0 };
     c.trimScale.textContent = fmt(trim.scale_mul, 3);
-    c.trimX.textContent = signed(trim.dx_px, 3);
-    c.trimY.textContent = signed(trim.dy_px, 3);
+    c.trimX.textContent = signed(trim.dx_px, 4);  // H/V trim nudges are 10x finer
+    c.trimY.textContent = signed(trim.dy_px, 4);
   }
 
   function renderTravel(d) {
