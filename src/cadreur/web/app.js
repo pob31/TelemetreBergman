@@ -271,17 +271,27 @@
   const tpl = $("channel-tpl");
   const cards = {}; // "beamer/cid" -> refs
 
-  // ---- Precision: 10x finer drive-slider steps. Per-card toggle (shown in
-  // calibrate mode, next to the sliders), one shared/persisted state. ----
-  const COARSE_STEP = 0.001, FINE_STEP = 0.0001;
+  // ---- Precision: fine mode. A native range slider's `step` only affects
+  // keyboard nudges, not dragging (drag resolution is pixel-limited). So instead
+  // we ZOOM each drive slider to a small window around its value: the same drag
+  // then spans 1/10 of the range = ~10x finer. Per-card toggle, shared state. ----
+  const PWIN = 0.05;  // half-window -> span 0.10 = 1/10 of the full 0..1 range
   let precision = false;
   try { precision = localStorage.getItem("cadreur_precision") === "1"; } catch (_) {}
-  const driveStep = () => String(precision ? FINE_STEP : COARSE_STEP);
+  function windowAround(sl, center) {
+    if (precision) {
+      sl.min = Math.max(0, center - PWIN).toFixed(4);
+      sl.max = Math.min(1, center + PWIN).toFixed(4);
+      sl.step = "0.0001";
+    } else {
+      sl.min = "0"; sl.max = "1"; sl.step = "0.001";
+    }
+  }
+  const cardSliders = (c) => [c.driveScale, c.driveVpos, c.driveHpos];
   function applyPrecision() {
-    const s = driveStep();
     for (const key in cards) {
       const c = cards[key];
-      c.driveScale.step = c.driveVpos.step = c.driveHpos.step = s;
+      cardSliders(c).forEach((sl) => windowAround(sl, parseFloat(sl.value) || 0));
       if (c.precBtn) c.precBtn.classList.toggle("active", precision);
     }
   }
@@ -310,7 +320,10 @@
       showBtn: q(".ch-show"), collapse: q(".ch-collapse"), precBtn: q(".ch-precision"),
     };
     const P = `/api/channel/${beamer}/${cid}`;
-    c.driveScale.step = c.driveVpos.step = c.driveHpos.step = driveStep();
+    cardSliders(c).forEach((sl) => {
+      windowAround(sl, parseFloat(sl.value) || 0.5);            // initial range
+      sl.addEventListener("change", () => windowAround(sl, parseFloat(sl.value) || 0));  // recenter on release
+    });
     if (c.precBtn) {
       c.precBtn.classList.toggle("active", precision);
       c.precBtn.addEventListener("click", togglePrecision);
@@ -348,7 +361,7 @@
     });
     const wire = (sl, val, field) => sl.addEventListener("input", () => {
       const v = parseFloat(sl.value);
-      val.textContent = v.toFixed(3);
+      val.textContent = v.toFixed(4);
       api(`${P}/manual`, { [field]: v });
     });
     wire(c.driveScale, c.driveScaleVal, "scale");
@@ -504,7 +517,12 @@
     const man = ch.manual;
     if (man) {
       const sync = (sl, val, x) => {
-        if (x != null && document.activeElement !== sl) { sl.value = x; val.textContent = Number(x).toFixed(3); }
+        if (x == null || document.activeElement === sl) return;  // don't fight a drag
+        // In precision mode, keep the value inside the zoom window (recenter on
+        // calibrate entry / any jump) so it isn't clamped to the window edge.
+        if (precision && (x < parseFloat(sl.min) || x > parseFloat(sl.max))) windowAround(sl, x);
+        sl.value = x;
+        val.textContent = Number(x).toFixed(4);
       };
       sync(c.driveScale, c.driveScaleVal, man.scale);
       sync(c.driveVpos, c.driveVposVal, man.pos_v);

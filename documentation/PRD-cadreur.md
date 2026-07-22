@@ -257,8 +257,9 @@ controller during calibration (no Millumin readback):
 
 Two aids for setting up **from the stage** (tablet in hand, handling the curtain): each
 channel's **Show** button reveals that layer in Millumin (`osc_show`, a pure-path trigger),
-and the **Precision** toggle next to the sliders (in calibrate mode) makes them 10× finer.
-Channel cards **collapse** so you can fold away the layers you're not working on.
+and the **Precision** toggle next to the sliders (calibrate mode) zooms them to a small
+window for ≈10× finer dragging (a slider's native `step` alone doesn't affect drag
+resolution). Channel cards **collapse** so you can fold away layers you're not working on.
 
 Points table per channel: inline edit, per-row re-capture (current distance + current manual
 values) and delete. Trim nudges: scale ±0.01/±0.001, H/V ±0.001/±0.0001 (10× finer), plus
@@ -275,8 +276,9 @@ remembered in `localStorage["cadreur_lang"]`, English fills gaps). Served in the
   ticks and a cart marker; a **Capturer tous** bar appears when any channel is calibrating.
 - **Two columns FACE / RÉTRO**, each with its channels as cards cloned from a `<template>`:
   a **collapse** chevron + editable name, enable, OSC… (edit addresses), delete; live status
-  + values; calibrate toggle + three drive sliders with a per-card **Precision** toggle (10×
-  finer steps, persisted); a **Show** button (reveal the layer in Millumin from the stage);
+  + values; calibrate toggle + three drive sliders with a per-card **Precision** toggle
+  (zooms each slider to a small ±0.05 window, ≈10× finer on drag; persisted); a **Show**
+  button (reveal the layer in Millumin from the stage);
   capture; points table; trim; **+ canal** to add one. A collapsed card keeps only its
   header row. Lens-memory chips sit on the FACE column (global; hollow = no points).
 - **Footer**: show file + autosave dot, Save / Save as / Load / Export / Import, Advanced

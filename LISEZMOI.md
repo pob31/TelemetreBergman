@@ -96,8 +96,9 @@ envoi**, les calques restent où ils sont.
 Astuces :
 - Bouton **« Afficher »** (sur chaque canal) : révèle ce calque dans Millumin — pratique pour
   piloter **depuis la scène** en manipulant le rideau, sans retourner en régie.
-- Bouton **« Précision »** (près des curseurs, en mode calibration) : rend les curseurs
-  (échelle / horizontal / vertical) **10× plus fins** pour l'ajustement précis.
+- Bouton **« Précision »** (près des curseurs, en mode calibration) : **zoome** chaque curseur
+  sur une petite plage autour de sa valeur → glissement **~10× plus fin**. Relâcher recentre
+  la plage ; désactive pour retrouver toute la plage 0–1.
 - Les cartes de canal se **replient/déplient** (chevron ▾) pour masquer les calques sur
   lesquels tu ne travailles pas.
 - Le mapping est **quasi linéaire** : 2 points aux extrémités suffisent presque, un 3ᵉ au
