@@ -182,8 +182,12 @@ each 20 Hz decision sends up to three floats to the channel's own addresses:
 - Millumin maps each 0–1 to pixels/scale via the **Interaction transformer** the operator
   sets up (e.g. positionV 0→−1200 px, 0.5→centre, 1→+1200 px). Choose the pixel span per
   axis in Millumin — a **smaller** range for horizontal gives finer centring.
-- Defaults are `/front|retro/{scale,positionV,positionH}/{1..4}`; **editable per channel**
-  from the UI (OSC… button) or the show file. Validated against `^/[A-Za-z0-9._:/-]+$`.
+- Defaults are `/front|retro/{scale,positionV,positionH,layer}/{1..4}`; **editable per
+  channel** from the UI (OSC… button) or the show file. Validated against `^/[A-Za-z0-9._:/-]+$`.
+- **`osc_show`** (`/front|retro/layer/N`) is a **one-shot** trigger, not part of the 20 Hz
+  tick: the per-channel **Show** button posts to `…/show`, which sends `1.0` (reveal) or
+  `0.0` (hide) so the operator can display the layer being calibrated **from the stage**,
+  without returning to the booth.
 - Absolute values + periodic refresh (§8) self-heal a Millumin restart or column change.
 - UDP gives **no error** for an unknown address — if a layer doesn't move, the Interaction
   isn't learned or the address is wrong (verify in Millumin). Feedback/readback is off by
@@ -251,6 +255,10 @@ controller during calibration (no Millumin readback):
    walk the scrim back and forth per channel.
 6. Leave calibrate mode → the channel glides into interpolated playback.
 
+Two aids for setting up **from the stage** (tablet in hand, handling the curtain): each
+channel's **Show** button reveals/hides that layer in Millumin (`osc_show`), and the header
+**Precision** toggle makes the three drive sliders 10× finer for fine tuning.
+
 Points table per channel: inline edit, per-row re-capture (current distance + current manual
 values) and delete. Trim nudges: scale ±0.01/±0.001, H/V ±0.001/±0.0001 (10× finer), plus
 bake / reset. Capture is disabled while the distance is stale.
@@ -261,13 +269,15 @@ Single dark page, tablet-friendly, bilingual FR/EN (JSON i18n block + `data-i18n
 remembered in `localStorage["cadreur_lang"]`, English fills gaps). Served in the browser at
 `:8080` and, identically, inside the native window.
 
-- **Header**: Pi status + live abs_m, Millumin status (send-only), master **ARM** toggle.
+- **Header**: Pi status + live abs_m, Millumin status (send-only), a **Precision** toggle
+  (10× finer drive-slider steps, persisted in `localStorage`), master **ARM** toggle.
 - **Distance**: abs_m + stage position (crew reference); travel bar with per-beamer point
   ticks and a cart marker; a **Capturer tous** bar appears when any channel is calibrating.
 - **Two columns FACE / RÉTRO**, each with its channels as cards cloned from a `<template>`:
   editable name, enable, OSC… (edit addresses), delete; live status + values; calibrate
-  toggle + three drive sliders; capture; points table; trim; **+ canal** to add one.
-  Lens-memory chips sit on the FACE column (global; hollow = no points for that memory).
+  toggle + three drive sliders; a **Show** button (reveal/hide the layer in Millumin from
+  the stage); capture; points table; trim; **+ canal** to add one. Lens-memory chips sit on
+  the FACE column (global; hollow = no points for that memory).
 - **Footer**: show file + autosave dot, Save / Save as / Load / Export / Import, Advanced
   (smoothing) drawer.
 - Transport: the app's own SSE `GET /stream` (10 Hz snapshot); controls are `POST /api/…`
@@ -283,7 +293,7 @@ values, sending, n_points}`.
 **API endpoints** (all POST unless noted):
 `GET /api/health`, `arm`, `lens_memory`,
 `beamer/{b}/channel/add`,
-`channel/{b}/{cid}/{delete, rename, osc, enable, calibrate, manual, capture, points,
+`channel/{b}/{cid}/{delete, rename, osc, enable, calibrate, manual, show, capture, points,
 trim, trim/bake, trim/reset}`, `capture_all`, `smoothing`, `test_millumin`,
 `save`, `save_as`, `load`, `GET shows`, `GET export`, `import`, `meta`, `GET /stream`.
 

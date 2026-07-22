@@ -198,6 +198,7 @@ class CadreurState:
         return {
             "id": ch["id"], "name": ch["name"], "enabled": ch["enabled"],
             "osc_scale": ch["osc_scale"], "osc_posv": ch["osc_posv"], "osc_posh": ch["osc_posh"],
+            "osc_show": ch.get("osc_show", ""),
             "cal_key": showmod.cal_key_for(self.show, b),
             "points": cset["points"] if cset else [],
             "trim": cset["trim"] if cset else showmod.default_trim(),

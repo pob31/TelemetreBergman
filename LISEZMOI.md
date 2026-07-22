@@ -50,13 +50,14 @@ Tout a une valeur par défaut ; les clés utiles :
 
 ## L'interface
 
-- **En haut** : état du **Pi** (distance en direct), état **Millumin**, et le gros bouton
-  **ARM**.
+- **En haut** : état du **Pi** (distance en direct), état **Millumin**, le bouton
+  **Précision** (pas des curseurs 10× plus fins), et le gros bouton **ARM**.
 - **Distance** : distance absolue + position plateau (repère pour l'équipe) + barre de course
   avec les points de calibration.
 - **Deux colonnes FACE / RÉTRO**, chacune avec **4 canaux** (un canal = un calque Millumin).
   Sur chaque carte de canal : nom (modifiable), **actif**, **OSC…** (adresses), **🗑**,
-  **Mode calibration**, **Capturer**, tableau de points, **trim**. **+ canal** pour en ajouter.
+  **Mode calibration**, **Afficher** (montre/masque le calque dans Millumin), **Capturer**,
+  tableau de points, **trim**. **+ canal** pour en ajouter.
 - **Pastilles mémoires d'objectif** (M1/M2/M3) en tête de la colonne **FACE** (elles
   n'existent que pour la face).
 
@@ -70,6 +71,9 @@ Cadreur envoie sur `/front/{scale,positionH,positionV}/1..4` et `/retro/…/1..4
    la **plage en pixels** par axe — **plus petite en horizontal** pour un centrage plus fin.
 3. Si une adresse doit changer, utilise le bouton **OSC…** du canal dans Cadreur (pas besoin
    de toucher au code).
+4. Pour le bouton **« Afficher »**, apprends aussi une Interaction sur `/front|retro/layer/N`
+   (même numéro que le canal) : Cadreur envoie **1.0** pour montrer le calque, **0.0** pour le
+   masquer.
 
 > ⚠️ L'OSC ne renvoie pas d'erreur : si un calque **ne bouge pas**, c'est que l'Interaction
 > n'est pas apprise ou que l'adresse du canal ne correspond pas.
@@ -89,6 +93,10 @@ Ensuite **ARM** → Cadreur suit la distance et interpole entre tes points. **D�
 envoi**, les calques restent où ils sont.
 
 Astuces :
+- Bouton **« Afficher »** (sur chaque canal) : montre/masque ce calque dans Millumin —
+  pratique pour piloter **depuis la scène** en manipulant le rideau, sans retourner en régie.
+- Bouton **« Précision »** (en haut) : rend les curseurs (échelle / horizontal / vertical)
+  **10× plus fins** pour l'ajustement précis.
 - Le mapping est **quasi linéaire** : 2 points aux extrémités suffisent presque, un 3ᵉ au
   milieu affine.
 - Le **trim** = petite correction en direct par axe (les pas horizontal/vertical sont très

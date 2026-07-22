@@ -82,6 +82,7 @@ label { color: var(--muted); text-transform: uppercase; font-size: .7rem; letter
 .btn-mini { padding: 8px 12px; font-weight: 600; font-size: .85rem; text-decoration: none; display: inline-block; }
 .btn-mini.danger { color: var(--danger); background: transparent; border: 1.5px solid var(--danger); }
 .btn.warn { background: var(--warn); color: #201400; }
+.btn.active { background: var(--accent); color: var(--accent-ink); }
 .btn-link {
   appearance: none; border: none; background: none; cursor: pointer;
   font: inherit; color: var(--accent); text-decoration: underline; padding: 2px 4px;

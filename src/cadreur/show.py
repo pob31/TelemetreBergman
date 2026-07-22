@@ -50,7 +50,9 @@ SMOOTHING_LIMITS = {  # operator-tunable ranges (Advanced drawer)
     "refresh_hz": (0.1, 20.0),
 }
 DEFAULT_LENS_MEMORIES = ["M1", "M2", "M3"]
-OSC_KEYS = ("osc_scale", "osc_posv", "osc_posh")
+# osc_show is a one-shot "display this layer in Millumin" trigger (sends 1.0/0.0),
+# so the operator can reveal the layer being calibrated from the stage.
+OSC_KEYS = ("osc_scale", "osc_posv", "osc_posh", "osc_show")
 
 
 class ShowError(ValueError):
@@ -98,7 +100,8 @@ def default_osc(beamer: str, index: int) -> dict:
     p = OSC_PREFIX.get(beamer, beamer)
     return {"osc_scale": f"/{p}/scale/{index}",
             "osc_posv": f"/{p}/positionV/{index}",
-            "osc_posh": f"/{p}/positionH/{index}"}
+            "osc_posh": f"/{p}/positionH/{index}",
+            "osc_show": f"/{p}/layer/{index}"}
 
 
 def default_channel(beamer: str, index: int) -> dict:

@@ -167,7 +167,8 @@
       ["osc_scale", T.field_osc_scale, "text"],
       ["osc_posh", T.field_osc_posh, "text"],
       ["osc_posv", T.field_osc_posv, "text"],
-    ], { osc_scale: ch.osc_scale, osc_posh: ch.osc_posh, osc_posv: ch.osc_posv });
+      ["osc_show", T.field_osc_show, "text"],
+    ], { osc_scale: ch.osc_scale, osc_posh: ch.osc_posh, osc_posv: ch.osc_posv, osc_show: ch.osc_show });
     showModal(T.modal_osc_title, form.el, async () => {
       const r = await api(`/api/channel/${beamer}/${cid}/osc`, form.read());
       if (!r.ok) { apiErr(r); return false; }
@@ -270,6 +271,24 @@
   const tpl = $("channel-tpl");
   const cards = {}; // "beamer/cid" -> refs
 
+  // ---- Precision toggle: 10x finer drive-slider steps for fine tuning ----
+  const COARSE_STEP = 0.001, FINE_STEP = 0.0001;
+  let precision = false;
+  try { precision = localStorage.getItem("cadreur_precision") === "1"; } catch (_) {}
+  const driveStep = () => String(precision ? FINE_STEP : COARSE_STEP);
+  function applyPrecision() {
+    for (const key in cards) {
+      const c = cards[key];
+      c.driveScale.step = c.driveVpos.step = c.driveHpos.step = driveStep();
+    }
+    $("btn-precision").classList.toggle("active", precision);
+  }
+  $("btn-precision").addEventListener("click", () => {
+    precision = !precision;
+    try { localStorage.setItem("cadreur_precision", precision ? "1" : "0"); } catch (_) {}
+    applyPrecision();
+  });
+
   const findCh = (beamer, cid) => (snap && (snap.beamers[beamer] || []).find((c) => c.id === cid)) || null;
 
   function buildCard(beamer, cid) {
@@ -286,8 +305,20 @@
       driveVpos: q(".drive-vpos"), driveVposVal: q(".drive-vpos-val"),
       driveHpos: q(".drive-hpos"), driveHposVal: q(".drive-hpos-val"),
       tbody: q(".points tbody"), trimScale: q(".trim-scale"), trimX: q(".trim-x"), trimY: q(".trim-y"),
+      showBtn: q(".ch-show"),
     };
     const P = `/api/channel/${beamer}/${cid}`;
+    c.shown = false;  // local "layer shown in Millumin" state (no readback)
+    c.driveScale.step = c.driveVpos.step = c.driveHpos.step = driveStep();
+    const updateShowBtn = () => {
+      c.showBtn.textContent = c.shown ? T.hide_layer : T.show_layer;
+      c.showBtn.classList.toggle("warn", c.shown);
+    };
+    c.showBtn.addEventListener("click", () => {
+      c.shown = !c.shown;
+      api(`${P}/show`, { on: c.shown }).then((r) => { if (!r.ok) apiErr(r); });
+      updateShowBtn();
+    });
     c.name.addEventListener("click", () => {
       const name = prompt(T.prompt_channel_name, c.name.textContent);
       if (name) api(`${P}/rename`, { name }).then((r) => { if (!r.ok) apiErr(r); });
@@ -547,5 +578,6 @@
       banner.classList.remove("hidden");
     };
   }
+  applyPrecision();  // reflect the persisted precision state on the button
   connect();
 })();

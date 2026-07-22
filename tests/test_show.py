@@ -49,6 +49,8 @@ class TestNewShow(unittest.TestCase):
         self.assertEqual(len(doc["beamers"]["rear"]["channels"]), DEFAULT_CHANNELS)
         self.assertEqual(doc["beamers"]["front"]["channels"][0]["osc_scale"], "/front/scale/1")
         self.assertEqual(doc["beamers"]["rear"]["channels"][3]["osc_posh"], "/retro/positionH/4")
+        self.assertEqual(doc["beamers"]["front"]["channels"][0]["osc_show"], "/front/layer/1")
+        self.assertEqual(doc["beamers"]["rear"]["channels"][0]["osc_show"], "/retro/layer/1")
 
     def test_normalize_is_fixed_point(self):
         doc = normalize(new_show())

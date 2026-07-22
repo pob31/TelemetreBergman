@@ -19,6 +19,7 @@
           <span class="status-label">Millumin</span> <span id="mil-text">—</span>
           <button id="btn-test" class="btn btn-mini" data-i18n="test_millumin" data-help="help_test">Test</button></div>
       </div>
+      <button id="btn-precision" class="btn btn-mini" data-i18n="precision" data-help="help_precision">Précision</button>
       <button id="btn-arm" class="btn arm off" data-help="help_arm"><span data-i18n="arm_off">OFF</span></button>
     </header>
 
@@ -87,6 +88,7 @@
         </div>
         <div class="ch-actions">
           <button class="btn cal-toggle" data-i18n="calibrate_mode">Mode calibration</button>
+          <button class="btn ch-show" data-i18n="show_layer">Afficher</button>
           <button class="btn btn-primary capture" data-i18n="capture">⊕ Capturer</button>
         </div>
         <table class="points"><thead><tr>
@@ -156,12 +158,15 @@
       "m_scale": "scale", "m_vertical": "vertical", "m_horizontal": "horizontal",
       "th_scale": "scale", "th_vertical": "vert.", "th_horizontal": "hor.",
       "add_channel": "+ channel", "capture_all": "⊕ Capture all calibrating channels", "osc_edit": "OSC…",
+      "precision": "Precision", "show_layer": "Show", "hide_layer": "Hide",
       "confirm_delete_channel": "Delete this channel and its calibration?",
       "prompt_channel_name": "Channel name:",
       "toast_captured_all": "Captured {n} channel(s) at {d} m",
       "modal_osc_title": "OSC addresses",
       "field_osc_scale": "scale address", "field_osc_posh": "horizontal address", "field_osc_posv": "vertical address",
+      "field_osc_show": "show/hide address",
       "help_capture_all": "Capture all|Stores a point at the current distance for every channel in calibrate mode — fit every layer at this scrim position, then capture them all at once.",
+      "help_precision": "Precision|Makes the drive sliders (scale / horizontal / vertical) move in 10x smaller steps for fine tuning while setting up the layers.",
       "trim": "trim", "bake": "bake", "reset": "reset",
       "save": "Save", "save_as": "Save as", "load": "Load",
       "export": "Export", "import": "Import",
@@ -244,12 +249,15 @@
       "m_scale": "échelle", "m_vertical": "vertical", "m_horizontal": "horizontal",
       "th_scale": "échelle", "th_vertical": "vert.", "th_horizontal": "hor.",
       "add_channel": "+ canal", "capture_all": "⊕ Capturer tous les canaux en calibration", "osc_edit": "OSC…",
+      "precision": "Précision", "show_layer": "Afficher", "hide_layer": "Masquer",
       "confirm_delete_channel": "Supprimer ce canal et sa calibration ?",
       "prompt_channel_name": "Nom du canal :",
       "toast_captured_all": "{n} canal/canaux capturé(s) à {d} m",
       "modal_osc_title": "Adresses OSC",
       "field_osc_scale": "adresse échelle", "field_osc_posh": "adresse horizontale", "field_osc_posv": "adresse verticale",
+      "field_osc_show": "adresse afficher/masquer",
       "help_capture_all": "Capturer tous|Enregistre un point à la distance courante pour chaque canal en mode calibration — règle tous les layers à cette position du rideau, puis capture tout d'un coup.",
+      "help_precision": "Précision|Fait bouger les curseurs (échelle / horizontal / vertical) par pas 10× plus petits, pour un réglage fin pendant la configuration des layers.",
       "trim": "trim", "bake": "figer", "reset": "raz",
       "save": "Enregistrer", "save_as": "Enregistrer sous", "load": "Ouvrir",
       "export": "Exporter", "import": "Importer",
