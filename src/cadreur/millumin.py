@@ -76,6 +76,16 @@ class MilluminIO:
         except OSError as e:
             log.warning("OSC send failed: %s", e)
 
+    def send_bang(self, address: str) -> None:
+        """Send an argument-less OSC message (pure path trigger, e.g. to reveal
+        a layer in Millumin: the address alone, no value)."""
+        if not address:
+            return
+        try:
+            self._client.send_message(address, [])
+        except OSError as e:
+            log.warning("OSC send failed: %s", e)
+
     # --- correlated query (blocking; run via asyncio.to_thread) ---------------
     def query(self, layer: str, timeout_ms: Optional[int] = None) -> Optional[dict]:
         """Current {scale, pos_x, pos_y, latency_ms} of a layer, or None on

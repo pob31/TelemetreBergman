@@ -203,16 +203,17 @@ async def channel_calibrate(b: str, cid: str, request: Request):
 
 
 @app.post("/api/channel/{b}/{cid}/show")
-async def channel_show(b: str, cid: str, request: Request):
-    """One-shot: reveal (1.0) or hide (0.0) the layer in Millumin via osc_show,
-    so the operator can display the layer being calibrated from the stage."""
+async def channel_show(b: str, cid: str):
+    """Reveal the layer in Millumin: send osc_show as a **pure path** (no
+    argument), so the operator can display the layer being calibrated from the
+    stage. Millumin treats the bare address as the trigger."""
     try:
         ch = get_ch(b, cid)
     except showmod.ShowError as e:
         return err(str(e))
-    on = bool((await body_of(request)).get("on", True))
-    io.send_value(ch.get("osc_show", ""), 1.0 if on else 0.0)
-    return {"ok": True, "shown": on}
+    addr = ch.get("osc_show", "")
+    io.send_bang(addr)
+    return {"ok": True, "sent": addr}
 
 
 @app.post("/api/channel/{b}/{cid}/manual")

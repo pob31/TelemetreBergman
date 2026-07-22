@@ -19,7 +19,6 @@
           <span class="status-label">Millumin</span> <span id="mil-text">—</span>
           <button id="btn-test" class="btn btn-mini" data-i18n="test_millumin" data-help="help_test">Test</button></div>
       </div>
-      <button id="btn-precision" class="btn btn-mini" data-i18n="precision" data-help="help_precision">Précision</button>
       <button id="btn-arm" class="btn arm off" data-help="help_arm"><span data-i18n="arm_off">OFF</span></button>
     </header>
 
@@ -72,6 +71,7 @@
     <template id="channel-tpl">
       <div class="channel" data-cid="">
         <div class="ch-head">
+          <button class="ch-collapse btn-link" aria-label="collapse">▾</button>
           <button class="ch-name btn-link">—</button>
           <label class="enable"><input type="checkbox" class="enable-box" /><span data-i18n="enable">actif</span></label>
           <span class="col-spacer"></span>
@@ -82,6 +82,7 @@
         <div class="live"><span data-i18n="live">envoi :</span> <span class="live-values">—</span></div>
         <div class="calflag hidden" data-i18n="calibrating_flag">CALIBRATION — pilotage direct</div>
         <div class="manual hidden">
+          <button class="btn btn-mini ch-precision" data-i18n="precision" data-help="help_precision">Précision</button>
           <label class="manual-row"><span data-i18n="m_scale">échelle</span><input type="range" class="drive-scale" min="0" max="1" step="0.001" value="0.5" /><span class="drive-scale-val">0.500</span></label>
           <label class="manual-row"><span data-i18n="m_horizontal">horizontal</span><input type="range" class="drive-hpos" min="0" max="1" step="0.001" value="0.5" /><span class="drive-hpos-val">0.500</span></label>
           <label class="manual-row"><span data-i18n="m_vertical">vertical</span><input type="range" class="drive-vpos" min="0" max="1" step="0.001" value="0.5" /><span class="drive-vpos-val">0.500</span></label>

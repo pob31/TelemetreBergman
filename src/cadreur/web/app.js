@@ -271,23 +271,25 @@
   const tpl = $("channel-tpl");
   const cards = {}; // "beamer/cid" -> refs
 
-  // ---- Precision toggle: 10x finer drive-slider steps for fine tuning ----
+  // ---- Precision: 10x finer drive-slider steps. Per-card toggle (shown in
+  // calibrate mode, next to the sliders), one shared/persisted state. ----
   const COARSE_STEP = 0.001, FINE_STEP = 0.0001;
   let precision = false;
   try { precision = localStorage.getItem("cadreur_precision") === "1"; } catch (_) {}
   const driveStep = () => String(precision ? FINE_STEP : COARSE_STEP);
   function applyPrecision() {
+    const s = driveStep();
     for (const key in cards) {
       const c = cards[key];
-      c.driveScale.step = c.driveVpos.step = c.driveHpos.step = driveStep();
+      c.driveScale.step = c.driveVpos.step = c.driveHpos.step = s;
+      if (c.precBtn) c.precBtn.classList.toggle("active", precision);
     }
-    $("btn-precision").classList.toggle("active", precision);
   }
-  $("btn-precision").addEventListener("click", () => {
+  function togglePrecision() {
     precision = !precision;
     try { localStorage.setItem("cadreur_precision", precision ? "1" : "0"); } catch (_) {}
     applyPrecision();
-  });
+  }
 
   const findCh = (beamer, cid) => (snap && (snap.beamers[beamer] || []).find((c) => c.id === cid)) || null;
 
@@ -305,19 +307,23 @@
       driveVpos: q(".drive-vpos"), driveVposVal: q(".drive-vpos-val"),
       driveHpos: q(".drive-hpos"), driveHposVal: q(".drive-hpos-val"),
       tbody: q(".points tbody"), trimScale: q(".trim-scale"), trimX: q(".trim-x"), trimY: q(".trim-y"),
-      showBtn: q(".ch-show"),
+      showBtn: q(".ch-show"), collapse: q(".ch-collapse"), precBtn: q(".ch-precision"),
     };
     const P = `/api/channel/${beamer}/${cid}`;
-    c.shown = false;  // local "layer shown in Millumin" state (no readback)
     c.driveScale.step = c.driveVpos.step = c.driveHpos.step = driveStep();
-    const updateShowBtn = () => {
-      c.showBtn.textContent = c.shown ? T.hide_layer : T.show_layer;
-      c.showBtn.classList.toggle("warn", c.shown);
-    };
+    if (c.precBtn) {
+      c.precBtn.classList.toggle("active", precision);
+      c.precBtn.addEventListener("click", togglePrecision);
+    }
+    c.collapse.addEventListener("click", () => {
+      const collapsed = el.classList.toggle("collapsed");
+      c.collapse.textContent = collapsed ? "▸" : "▾";
+    });
+    // Show: momentary "reveal this layer in Millumin" (pure path, no argument).
     c.showBtn.addEventListener("click", () => {
-      c.shown = !c.shown;
-      api(`${P}/show`, { on: c.shown }).then((r) => { if (!r.ok) apiErr(r); });
-      updateShowBtn();
+      c.showBtn.classList.add("warn");
+      setTimeout(() => c.showBtn.classList.remove("warn"), 350);
+      api(`${P}/show`).then((r) => { if (!r.ok) apiErr(r); });
     });
     c.name.addEventListener("click", () => {
       const name = prompt(T.prompt_channel_name, c.name.textContent);
