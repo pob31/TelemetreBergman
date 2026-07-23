@@ -353,7 +353,7 @@ src/cadreur/
   millumin.py                   # OSC out (+ optional feedback listener)
   gui.py                        # pywebview native-window wrapper (cadreur-gui)
   web/  index.html  app.js  style.css
-scripts/  make_app.sh  sim_telemetre.py  millumin_sim.py  osc_test.py  drive_demo.py  analyze_points.py
+scripts/  setup_mac.sh  make_app.sh  sim_telemetre.py  millumin_sim.py  osc_test.py  drive_demo.py  analyze_points.py
 tests/    test_interp.py  test_smoothing.py  test_show.py  test_engine.py
 documentation/PRD-cadreur.md    cadreur.example.toml    shows/example-show.json
 ```
@@ -363,14 +363,19 @@ documentation/PRD-cadreur.md    cadreur.example.toml    shows/example-show.json
 
 ## 14. Run, native app, deploy, backup
 
+- **One-command setup**: `./scripts/setup_mac.sh` — (re)creates `.venv`, installs with the
+  `gui` extra, writes `cadreur.toml` from the example, builds `Cadreur.app`. Idempotent.
 - **Headless**: `python3 -m venv .venv && .venv/bin/pip install -e .` then
   `.venv/bin/python -m cadreur` (UI on `http://127.0.0.1:8080`).
 - **Native window**: `.venv/bin/pip install -e '.[gui]'` then `.venv/bin/cadreur-gui`.
+  Note: quote `'.[gui]'` — zsh treats the brackets as a glob.
 - **Double-clickable app**: `./scripts/make_app.sh` builds `Cadreur.app` at the repo root
   (keep it there; drag to the Dock). It runs `cadreur-gui`, logs to `cadreur_gui.log`.
 - **Backup / moving the folder**: the code is location-independent; only `.venv/` must be
-  recreated after a move or on a new machine. What to back up = `shows/*.json` +
-  `cadreur.toml`. Full steps: README → "Backup and moving the folder".
+  recreated after a move or on a new machine (a copied venv keeps absolute paths and fails
+  with `bad interpreter: …/python3.x: no such file`; `setup_mac.sh` deletes and rebuilds it).
+  What to back up = `shows/*.json` + `cadreur.toml`. Full steps: README → "Backup and
+  moving the folder".
 
 ## 15. Testing & simulation
 

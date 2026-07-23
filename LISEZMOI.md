@@ -20,15 +20,20 @@ Millumin traduit ce 0–1 en pixels/échelle via ses **Interactions** (0.5 = cen
 ## Installation (une fois, sur le Mac)
 
 Il faut Python ≥ 3.11 (l'installeur de <https://www.python.org/downloads/> convient).
-Dans le dossier du projet :
+Dans le dossier du projet, **une seule commande** :
 
 ```bash
-python3 -m venv .venv && ./.venv/bin/pip install -e '.[gui]'
-cp cadreur.example.toml cadreur.toml   # règle l'IP du Pi et les ports
-./scripts/make_app.sh                  # crée Cadreur.app (double-cliquable)
+./scripts/setup_mac.sh
 ```
 
-Puis glisse **Cadreur.app** dans le Dock. (Il faut internet une seule fois, pour le `pip install`.)
+Elle fait tout : (re)crée le `.venv`, installe les dépendances, crée `cadreur.toml`
+depuis l'exemple, et construit `Cadreur.app`. Elle est **rejouable** sans risque.
+Ensuite : vérifie `cadreur.toml` (adresse du Pi) et glisse **Cadreur.app** dans le Dock.
+(Internet requis une seule fois, pour l'installation des dépendances.)
+
+> 💡 **Copie-colle la ligne telle quelle.** Si tu tapes les commandes à la main,
+> attention : en zsh il faut **quoter** `'.[gui]'` (les crochets sont interprétés), et
+> colle les commandes **ligne par ligne** (un bloc collé en une seule ligne échoue).
 
 ## Lancer l'appli
 
@@ -115,19 +120,24 @@ Astuces :
 
 ## Sauvegarde, déplacement, autre machine
 
-Le dossier peut être **déplacé ou copié** (ex. `~/Documents/SDLVC/`). La **seule** chose à
-refaire est le `.venv` (il contient des chemins absolus) :
+Le dossier peut être **déplacé ou copié** (ex. `~/Documents/SDLVC/`, ou une machine de
+secours). La **seule** chose à refaire est le `.venv` : il contient des **chemins absolus**,
+donc un `.venv` copié ne fonctionne pas ailleurs. Sur la nouvelle machine :
 
 ```bash
 cd <nouveau-dossier>
-rm -rf .venv
-python3 -m venv .venv && ./.venv/bin/pip install -e '.[gui]'
-./scripts/make_app.sh          # reconstruit Cadreur.app
+./scripts/setup_mac.sh
 ```
 
-Puis **re-glisse Cadreur.app dans le Dock** depuis le nouvel emplacement. À vraiment
-sauvegarder : **`shows/` + `cadreur.toml`**. Sur une machine neuve, on peut aussi récupérer
-le code avec `git clone` (dépôt GitHub) puis recopier `shows/` + `cadreur.toml`.
+Le script **supprime le `.venv` copié**, le recrée, réinstalle et reconstruit `Cadreur.app`.
+Puis **re-glisse Cadreur.app dans le Dock** depuis le nouvel emplacement.
+
+> ⚠️ N'exécute **pas** `./.venv/bin/pip` d'un `.venv` copié : son interpréteur pointe encore
+> vers l'ancienne machine (erreur `bad interpreter: .../python3.x: no such file or
+> directory`). Il faut d'abord le supprimer — c'est ce que fait le script.
+
+À vraiment sauvegarder : **`shows/` + `cadreur.toml`**. Sur une machine neuve on peut aussi
+récupérer le code avec `git clone` (dépôt GitHub) puis recopier `shows/` + `cadreur.toml`.
 (Détails : section « Backup and moving the folder » du README.)
 
 ## Dépannage rapide
@@ -137,7 +147,9 @@ le code avec `git clone` (dépôt GitHub) puis recopier `shows/` + `cadreur.toml
 | « Pi hors ligne / figé » | Vérifier `[telemetre] url` et que le Pi (`192.168.0.51`) répond. L'appli garde la dernière valeur pendant la coupure. |
 | Un calque ne bouge pas | Interaction non apprise dans Millumin, ou adresse OSC du canal fausse (bouton **OSC…**). |
 | Rien ne défile / affichage figé | Recharger la page (**Cmd+R**) ou relancer l'app. |
-| Cadreur.app ne démarre pas | Le `.venv` manque (dossier déplacé / copié) → refaire l'install ci-dessus. |
+| Cadreur.app ne démarre pas | Le `.venv` manque (dossier déplacé / copié) → `./scripts/setup_mac.sh`. |
+| `bad interpreter: .../python3.x: no such file or directory` | `.venv` copié depuis une autre machine/dossier → `./scripts/setup_mac.sh` (il le supprime et le recrée). |
+| `zsh: no matches found: .[gui]` | Les crochets doivent être quotés : `'.[gui]'` — ou lance simplement `./scripts/setup_mac.sh`. |
 | macOS bloque le réseau | Autoriser Python à recevoir les connexions entrantes. |
 
 ## Pour aller plus loin

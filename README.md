@@ -23,11 +23,19 @@ layers so front- and rear-projected video stays fitted to the travelling scrim
 Cadreur calibration). Spec: [`documentation/PRD-cadreur.md`](documentation/PRD-cadreur.md).
 **Guide d'exploitation en français : [`LISEZMOI.md`](LISEZMOI.md).**
 
-Run on the show Mac (Python ≥ 3.11):
+Set up on the show Mac (Python ≥ 3.11) with one command — it creates the venv,
+installs everything, writes `cadreur.toml` and builds `Cadreur.app`, and is safe
+to re-run:
 
 ```bash
-python3 -m venv .venv && .venv/bin/pip install -e .
-cp cadreur.example.toml cadreur.toml   # set the Pi's URL, ports
+./scripts/setup_mac.sh
+```
+
+Or by hand (note the quotes around `'.[gui]'` — zsh globs the brackets):
+
+```bash
+python3 -m venv .venv && ./.venv/bin/pip install -e '.[gui]'
+cp cadreur.example.toml cadreur.toml   # set the Pi URL and ports
 .venv/bin/python -m cadreur            # UI on http://127.0.0.1:8080
 ```
 
@@ -51,14 +59,16 @@ plain macOS installer from <https://www.python.org/downloads/> is fine
 The code is **location-independent** (paths are resolved at runtime), so the
 folder can be moved or copied anywhere — e.g. `~/Documents/SDLVC/TelemetreBergman`
 — or to a backup machine. Only one thing does **not** survive a move or a copy:
-**`.venv/`** (it holds absolute paths). Recreate it in place:
+**`.venv/`** (it holds absolute paths, so a copied one fails with
+`bad interpreter: .../python3.x: no such file or directory`). Rebuild it in place:
 
 ```bash
 cd <new-folder>
-rm -rf .venv
-python3 -m venv .venv && ./.venv/bin/pip install -e '.[gui]'
-./scripts/make_app.sh          # rebuild Cadreur.app with clean paths
+./scripts/setup_mac.sh         # deletes the stale .venv, recreates it, rebuilds Cadreur.app
 ```
+
+Do **not** run `./.venv/bin/pip` from a copied venv — its interpreter still points at the
+machine it was built on; the stale `.venv` has to be deleted first (the script does that).
 
 Then re-drag `Cadreur.app` to the Dock from the new location (the old Dock
 reference breaks), and either delete `cadreur_state.json` or just **Load** your
@@ -176,7 +186,7 @@ src/cadreur/     Mac companion (Millumin scrim tracker): engine.py millumin.py s
 web/             index.html app.js style.css   (EventSource UI)
 systemd/         telemetre.service
 scripts/         install.sh deploy.sh detect_serial.py net_sniff.py
-                 cadreur: make_app.sh sim_telemetre.py millumin_sim.py osc_test.py drive_demo.py analyze_points.py
+                 cadreur: setup_mac.sh make_app.sh sim_telemetre.py millumin_sim.py osc_test.py drive_demo.py analyze_points.py
 tests/           test_frames.py test_filters.py test_interp.py test_smoothing.py test_show.py test_engine.py
 shows/           cadreur show files (gitignored except example-show.json)
 documentation/   TF02-Pro datasheets/manual · PRD-cadreur.md (Mac companion app spec)
