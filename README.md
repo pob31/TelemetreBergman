@@ -21,7 +21,9 @@ this readout's SSE stream and continuously rescales/repositions **Millumin**
 layers so front- and rear-projected video stays fitted to the travelling scrim
 (4+4 continuously-driven channels per beamer, front lens memories, drive-from-
 Cadreur calibration). Spec: [`documentation/PRD-cadreur.md`](documentation/PRD-cadreur.md).
-**Guide d'exploitation en français : [`LISEZMOI.md`](LISEZMOI.md).**
+**Guide d'exploitation en français : [`LISEZMOI.md`](LISEZMOI.md)** — includes the full
+install/reinstall runbook (prerequisites, one-command setup, macOS permissions, restoring
+calibrations, remote-support SSH access) and a troubleshooting table.
 
 Set up on the show Mac (Python ≥ 3.11) with one command — it creates the venv,
 installs everything, writes `cadreur.toml` and builds `Cadreur.app`, and is safe

@@ -17,23 +17,102 @@ calque, une **échelle + position horizontale + verticale** (valeurs **0.0–1.0
 points que **tu as calibrés** à quelques positions du tulle, et les envoie à Millumin en OSC.
 Millumin traduit ce 0–1 en pixels/échelle via ses **Interactions** (0.5 = centré).
 
-## Installation (une fois, sur le Mac)
+## Installation / réinstallation complète (sur un Mac)
 
-Il faut Python ≥ 3.11 (l'installeur de <https://www.python.org/downloads/> convient).
-Dans le dossier du projet, **une seule commande** :
+Procédure complète, d'un Mac vierge à un poste prêt pour le spectacle.
+
+### 1. Prérequis
+
+- **Python 3.11 ou plus récent** — l'installeur de <https://www.python.org/downloads/>
+  convient. Vérifier : `python3 --version`.
+- Un accès **internet une seule fois** (installation des dépendances).
+
+### 2. Récupérer le projet
+
+```bash
+git clone https://github.com/pob31/TelemetreBergman.git
+cd TelemetreBergman
+```
+
+(ou copier le dossier depuis une sauvegarde — voir « Sauvegarde, déplacement, autre machine »).
+
+> 📁 **Où mettre le dossier ?** Évite `~/Documents`, le Bureau, `~/Téléchargements` et
+> iCloud : macOS **protège** ces dossiers et demande une autorisation à chaque app qui y
+> touche (voir §5). Un emplacement comme `~/SDLVC/` évite tout ça. Le dossier reste **d'un
+> seul bloc** (app, venv, spectacles, config) — rien n'est éparpillé.
+
+### 3. Installer — une seule commande
 
 ```bash
 ./scripts/setup_mac.sh
 ```
 
-Elle fait tout : (re)crée le `.venv`, installe les dépendances, crée `cadreur.toml`
-depuis l'exemple, et construit `Cadreur.app`. Elle est **rejouable** sans risque.
-Ensuite : vérifie `cadreur.toml` (adresse du Pi) et glisse **Cadreur.app** dans le Dock.
-(Internet requis une seule fois, pour l'installation des dépendances.)
+Elle (re)crée le `.venv`, installe les dépendances, crée `cadreur.toml` depuis l'exemple et
+construit `Cadreur.app`. Elle est **rejouable** sans risque.
 
-> 💡 **Copie-colle la ligne telle quelle.** Si tu tapes les commandes à la main,
-> attention : en zsh il faut **quoter** `'.[gui]'` (les crochets sont interprétés), et
-> colle les commandes **ligne par ligne** (un bloc collé en une seule ligne échoue).
+> 💡 Si tu tapes les commandes à la main plutôt que d'utiliser le script : en zsh il faut
+> **quoter** `'.[gui]'` (les crochets sont interprétés comme un motif), et coller les
+> commandes **ligne par ligne** (un bloc collé en une seule ligne échoue).
+
+### 4. Configurer et restaurer
+
+- `cadreur.toml` → `[telemetre] url` = adresse du Pi (ex. `http://192.168.0.51`),
+  `[millumin] port` = 5000.
+- **Restaurer les calibrations** : recopier tes fichiers `shows/*.json` de la sauvegarde
+  dans le dossier `shows/`.
+
+### 5. Autorisations macOS
+
+- Au premier lancement, le **pare-feu** demande si Python peut recevoir des connexions
+  entrantes → **Autoriser**.
+- Si `cadreur_gui.log` affiche **« Operation not permitted »**, c'est la protection de
+  confidentialité (TCC) : le dossier est dans une zone protégée. Deux solutions :
+  1. **déplacer le dossier** hors de `~/Documents` / Bureau / Téléchargements (le plus
+     simple et définitif), puis relancer `./scripts/setup_mac.sh` ;
+  2. ou Réglages Système → Confidentialité et sécurité → **Accès complet au disque** →
+     ajouter `Cadreur.app` **et** le Python du venv (son chemin réel :
+     `readlink -f .venv/bin/python3`), car l'app est un script qui lance Python.
+- Dans tous les cas : **quitter l'app (⌘Q) puis la relancer** — les autorisations ne
+  s'appliquent qu'au démarrage du processus (pas besoin de se déconnecter/redémarrer).
+
+### 6. Lancer
+
+- **Double-clic sur `Cadreur.app`** (le garder dans le dossier du projet ; le glisser dans
+  le Dock). Journal : `cadreur_gui.log`.
+- Ou en Terminal : `./.venv/bin/python -m cadreur`, puis <http://127.0.0.1:8080>.
+
+### 7. Côté Millumin
+
+Apprendre les Interactions de chaque calque — voir la section « Côté Millumin » plus bas.
+
+### 8. Accès à distance (pour le support)
+
+Pour qu'on puisse diagnostiquer/déployer à distance depuis le poste de dev :
+
+- Réglages Système → Général → Partage → **Session à distance** activée.
+- Autoriser la clé publique du poste de dev (à coller tel quel) :
+
+```zsh
+mkdir -p ~/.ssh
+a=AAAAC3NzaC1lZDI1NTE5AAAAIOmdSFEE
+b=+7bE8wzDnxtFC9/6skAQxUbXIxIQAh83FGN7
+echo >> ~/.ssh/authorized_keys
+echo ssh-ed25519 $a$b telemetre-dev-win >> ~/.ssh/authorized_keys
+chmod 700 ~/.ssh
+chmod 600 ~/.ssh/authorized_keys
+tail -1 ~/.ssh/authorized_keys
+```
+
+La dernière ligne doit afficher la clé **sur une seule ligne**. Noter ensuite le nom
+d'utilisateur (`whoami`) et l'adresse (`ipconfig getifaddr en0`).
+
+### 9. Vérification finale
+
+1. La **distance du Pi** défile en direct dans l'interface.
+2. Un canal en **Mode calibration** : les curseurs bougent bien le calque dans Millumin.
+3. **Afficher** révèle le bon calque.
+4. **Capturer** ajoute un point ; **Enregistrer sous** crée le fichier spectacle.
+5. **ARM** : le suivi se fait tout seul quand le rideau bouge.
 
 ## Lancer l'appli
 
@@ -151,6 +230,7 @@ récupérer le code avec `git clone` (dépôt GitHub) puis recopier `shows/` + `
 | `bad interpreter: .../python3.x: no such file or directory` | `.venv` copié depuis une autre machine/dossier → `./scripts/setup_mac.sh` (il le supprime et le recrée). |
 | `zsh: no matches found: .[gui]` | Les crochets doivent être quotés : `'.[gui]'` — ou lance simplement `./scripts/setup_mac.sh`. |
 | macOS bloque le réseau | Autoriser Python à recevoir les connexions entrantes. |
+| `Operation not permitted` dans `cadreur_gui.log` | Dossier dans une zone protégée (Documents / Bureau / Téléchargements / iCloud). Déplacer le dossier ailleurs (ex. `~/SDLVC/`) **ou** donner l'Accès complet au disque à `Cadreur.app` *et* au Python du venv (`readlink -f .venv/bin/python3`), puis **quitter (⌘Q) et relancer**. |
 
 ## Pour aller plus loin
 
