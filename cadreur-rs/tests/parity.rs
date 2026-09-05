@@ -78,3 +78,17 @@ fn matches_python_reference() {
         }
     }
 }
+
+/// The Rust loader must agree with the Python on a real show file, not just on
+/// generated cases. Compared as `Value`, so key ordering is irrelevant.
+#[test]
+fn loads_the_real_example_show_like_python() {
+    let want: Value = serde_json::from_str(include_str!("fixtures/example_show_normalized.json"))
+        .expect("fixture parses");
+    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("..")
+        .join("shows")
+        .join("example-show.json");
+    let got = cadreur::show::load_show(&path).expect("loads").to_value();
+    assert_eq!(got, want, "Rust and Python disagree on the example show");
+}

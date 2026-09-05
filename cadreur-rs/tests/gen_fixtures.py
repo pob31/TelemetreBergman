@@ -56,3 +56,12 @@ out = os.path.join(HERE, "fixtures", "interp_cases.json")
 with open(out, "w") as f:
     json.dump({"generated_by": "src/cadreur/interp.py", "cases": cases}, f, indent=1)
 print(f"{len(cases)} cases -> {out}")
+
+# --- the real example show, normalized by the Python reference ---------------
+from cadreur.show import load_show  # noqa: E402
+
+real = load_show(os.path.join(HERE, "..", "..", "shows", "example-show.json"))
+out2 = os.path.join(HERE, "fixtures", "example_show_normalized.json")
+with open(out2, "w") as f:
+    json.dump(real, f, indent=1)
+print(f"example show -> {out2}")

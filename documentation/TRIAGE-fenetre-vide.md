@@ -71,7 +71,7 @@ Autrement dit : un spectacle perdu, tronqué ou illisible **ne peut pas** produi
 fenêtre blanche. Il produit une interface complète mais **remise à zéro**.
 
 **Le signe qui ne trompe pas :** si les canaux s'appellent « Face 1 / Face 2 / Face 3 » et
-« Rétro 1… » — les noms d'usine — le spectacle n'est pas chargé. Si Stefo avait renommé ses
+« Lointain 1… » — les noms d'usine — le spectacle n'est pas chargé. Si Stefo avait renommé ses
 canaux, leurs vrais noms doivent réapparaître une fois le bon spectacle ouvert.
 
 ## Donc : que veut dire exactement « fenêtre vide » ?

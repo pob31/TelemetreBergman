@@ -5,4 +5,5 @@
 //! browser/tablet access path is preserved alongside the native window.
 
 pub mod interp;
+pub mod show;
 pub mod smoothing;
