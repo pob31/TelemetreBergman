@@ -17,7 +17,13 @@ them goes in French, in `LISEZMOI.md`.
 
 ## If you are running on the venue Mac (régie)
 
-Read `documentation/TRIAGE-fenetre-vide.md` first — there is an open incident.
+There is an open incident. Read `documentation/TRIAGE-fenetre-vide.md` first, and
+start at its section **« Pour une session Claude locale sur le Mac de régie »** — it
+lists what has already been ruled out, the order to work in, and where to stop.
+
+Short version: secure `shows/` first, diagnose read-only, then **report back rather
+than fix**. Do not change `src/` on this machine while the cause is unconfirmed —
+the point is that the running system stays identical to the one that worked in July.
 
 **The irreplaceable asset is `shows/*.json`.** Those are hand-made calibrations, hours
 of work on stage with the scrim, and they exist nowhere else. Everything else in this

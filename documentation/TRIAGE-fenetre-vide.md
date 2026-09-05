@@ -14,6 +14,45 @@ Rien n'a été modifié sur la machine depuis juillet.
 - **Ni le temps de stockage en lui-même.** Le serveur a été relancé depuis le dépôt à la
   date du 5 septembre 2026 : il démarre proprement et sert l'interface (`200 OK`).
 
+## Pour une session Claude locale sur le Mac de régie
+
+Tu reprends un diagnostic déjà entamé à distance. Lis cette section avant d'agir.
+
+**Déjà écarté — ne pas refaire :**
+
+- Signature / notarisation expirée : impossible, rien n'est compilé (voir ci-dessus).
+- Bug lié à la date : le serveur a été relancé depuis ce dépôt le 2026-09-05, il démarre
+  proprement et sert l'interface (`200 OK`, `/api/health` répond).
+- Le `.venv` : ce n'est pas la piste. Une fenêtre s'ouvre, donc Python tourne.
+
+**Protocole, dans cet ordre :**
+
+1. Mettre `shows/` à l'abri (section suivante). **Avant tout le reste.**
+2. Poser à Stefo la question qui tranche : la fenêtre est-elle **totalement vide**, ou
+   est-ce **l'interface normale** (bandeau, bouton ARM) **sans canaux ni distance** ?
+3. Lancer `./scripts/diagnose_mac.sh` (lecture seule, ne lance pas Cadreur).
+4. Lire l'arbre de décision ci-dessous.
+5. **S'arrêter là et rendre compte.** Coller la sortie complète du script.
+
+**Limites à respecter sur cette machine :**
+
+- **Ne modifie pas `src/`.** Le poste doit rester identique à la version de juillet tant
+  que la cause n'est pas confirmée. Les correctifs sont listés en fin de document et se
+  font ailleurs, plus tard.
+- **Ne relance pas l'app en boucle** pour reproduire : chaque démarrage fait tourner les
+  sauvegardes et en supprime une bonne.
+- **Ne « répare » aucun JSON à la main.** La seule réparation autorisée est de rouvrir le
+  spectacle depuis l'interface, ou de restaurer un fichier marqué `OK` depuis
+  `shows/backups/` — et seulement une fois la copie de sauvegarde faite.
+- Si la distance ne défile pas, ce n'est pas forcément Cadreur : vérifier d'abord que le
+  Pi répond à l'adresse de `[telemetre] url`. Un test bout-en-bout suppose aussi que
+  **Millumin tourne** avec le bon projet.
+- **Parle à Stefo en français.** C'est un technicien vidéo, pas un développeur : donne des
+  commandes à copier-coller, pas des explications de code.
+
+**« Réparé » veut dire :** le spectacle se rouvre, la distance du Pi défile en direct, et
+en ARM les calques suivent le tulle dans Millumin.
+
 ## Hypothèse principale : aucun spectacle n'est chargé
 
 La fenêtre s'affiche, mais **vide de contenu**. Au démarrage (`src/cadreur/app.py`,
