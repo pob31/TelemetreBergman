@@ -1,0 +1,4 @@
+# Pinned so a local build and any future CI runner agree exactly.
+[toolchain]
+channel = "1.98.1"
+targets = ["aarch64-apple-darwin"]

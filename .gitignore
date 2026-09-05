@@ -19,3 +19,6 @@ shows/*
 .DS_Store
 Thumbs.db
 .vscode/
+
+# Rust
+cadreur-rs/target/
