@@ -232,6 +232,67 @@ récupérer le code avec `git clone` (dépôt GitHub) puis recopier `shows/` + `
 | macOS bloque le réseau | Autoriser Python à recevoir les connexions entrantes. |
 | `Operation not permitted` dans `cadreur_gui.log` | Dossier dans une zone protégée (Documents / Bureau / Téléchargements / iCloud). Déplacer le dossier ailleurs (ex. `~/SDLVC/`) **ou** donner l'Accès complet au disque à `Cadreur.app` *et* au Python du venv (`readlink -f .venv/bin/python3`), puis **quitter (⌘Q) et relancer**. |
 
+## La nouvelle application (version Rust) — pas encore déployée
+
+> ⚠️ **Rien à faire pour le spectacle en cours.** L'application Python décrite
+> ci-dessus reste celle qui tourne. Cette section décrit la version qui la
+> remplacera, une fois validée en conditions réelles.
+
+### Ce qui change pour toi
+
+- **Un seul fichier à copier.** `Cadreur.app` contient tout : plus de dossier de
+  projet à garder à côté, plus de `.venv`, plus de Python à installer. 1,5 Mo
+  au lieu de 208 Mo.
+- **Rien à installer.** Tu copies l'app où tu veux (Applications, une clé USB,
+  le Bureau) et tu double-cliques.
+- **Signée et notariée par Apple.** macOS ne la bloque plus, même reçue par
+  AirDrop ou téléchargée. Le ticket est *agrafé* à l'application : elle
+  s'ouvre même **sans internet**, ce qui est le cas au théâtre.
+- **L'interface est exactement la même.** Le code de l'interface est
+  littéralement le même fichier que dans la version Python — pas une copie.
+
+### Où sont tes données
+
+Elles ne sont **plus dans le dossier du projet** mais dans :
+
+```
+~/Library/Application Support/Cadreur/
+    cadreur.toml      réglages (adresse du Pi, port…)
+    shows/            TES CALIBRATIONS — c'est ça qu'on sauvegarde
+```
+
+Le journal est dans `~/Library/Logs/Cadreur/cadreur.log`.
+
+C'est un emplacement **non synchronisé par iCloud** et **non protégé** par les
+autorisations de confidentialité macOS. Les trois pannes d'environnement
+possibles (fichiers évincés par iCloud, dossier protégé, mauvaise copie du
+projet) ne peuvent plus se produire. Et remplacer l'application ne touche
+jamais tes spectacles.
+
+### Reprendre les spectacles de l'installation actuelle
+
+Deux possibilités :
+
+1. Copier tes `shows/*.json` dans `~/Library/Application Support/Cadreur/shows/`.
+2. Ou pointer l'app sur le dossier existant, sans rien déplacer :
+
+```bash
+CADREUR_DATA_DIR=~/SDLVC/TelemetreBergman /Applications/Cadreur.app/Contents/MacOS/cadreur
+```
+
+### Pour le développeur
+
+```bash
+cd cadreur-rs && cargo test        # 100 tests + les tests de parité
+./scripts/build_app.sh             # construit et signe dist/Cadreur.app
+./scripts/build_app.sh --notarize  # ... puis notarise et agrafe le ticket
+```
+
+Le port est vérifié contre l'implémentation Python : les instantanés `/stream`
+et les 37 cas d'API (chemins d'erreur compris) donnent des réponses
+identiques, et 400 cas d'interpolation tirés au hasard sont comparés aux
+sorties produites par `src/cadreur/interp.py` lui-même.
+
 ## Pour aller plus loin
 
 - Spécification technique complète (anglais) : `documentation/PRD-cadreur.md`.
