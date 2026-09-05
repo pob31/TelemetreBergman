@@ -219,6 +219,33 @@ Puis **re-glisse Cadreur.app dans le Dock** depuis le nouvel emplacement.
 récupérer le code avec `git clone` (dépôt GitHub) puis recopier `shows/` + `cadreur.toml`.
 (Détails : section « Backup and moving the folder » du README.)
 
+## Si le télémètre a été bougé ou déréglé
+
+Les calibrations sont enregistrées en **distance absolue** (ex. 0,45 m /
+4,12 m / 9,95 m). Le calcul est immunisé contre **Set Zero**, **Clear Zero** et
+**Inverser le sens** côté Pi — ça, c'est du logiciel, et c'est prévu.
+
+Mais si le **boîtier a physiquement bougé** (quelqu'un l'a heurté, il a été
+démonté puis remonté), la même position de tulle ne donne plus la même
+distance. Toutes les calibrations sont alors **décalées d'autant**, et l'image
+tombe à côté.
+
+**Comment le vérifier** : amener le tulle sur un repère connu et comparer la
+distance affichée à celle du point de calibration correspondant. Un écart
+constant sur tous les repères = le boîtier a bougé de cette valeur.
+
+**Deux réparations possibles :**
+
+1. **Le remettre exactement où il était** — le mieux, rien d'autre à refaire.
+2. **Recapturer** — si la position d'origine est perdue. Ce n'est pas si long :
+   le mapping est quasi linéaire, donc **2 points aux extrémités** par canal
+   suffisent presque, un 3ᵉ au milieu affine. Passer les canaux en **Mode
+   calibration**, régler à chaque position, **Capturer tous les canaux**.
+
+> 💡 Une fois le boîtier définitivement fixé, noter/marquer sa position : en
+> tournée il sera démonté et remonté à chaque lieu, et c'est ce repère qui
+> évite de recalibrer à chaque fois.
+
 ## Dépannage rapide
 
 | Symptôme | Cause probable / solution |
@@ -295,6 +322,16 @@ d'accepter les connexions entrantes → **Autoriser**.
 
 Avec les réglages par défaut, il n'y a **rien d'autre** à autoriser : Millumin
 est joint en local (127.0.0.1), et macOS n'exige aucune autorisation pour ça.
+
+### ⚠️ Au premier lancement, l'app est VIDE — c'est normal
+
+La nouvelle app démarre avec un dossier de données neuf : **aucun spectacle**,
+des canaux aux noms d'usine (« Face 1 », « Lointain 1 »), aucun point de
+calibration.
+
+C'est **exactement l'aspect** qu'avait la panne de septembre. Ne pas en
+conclure que l'app est cassée : elle n'a simplement pas encore tes fichiers.
+Commence par la section suivante, **puis** juge.
 
 ### Reprendre les spectacles de l'installation actuelle
 
