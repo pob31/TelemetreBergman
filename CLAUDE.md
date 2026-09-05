@@ -21,6 +21,10 @@ There is an open incident. Read `documentation/TRIAGE-fenetre-vide.md` first, an
 start at its section **« Pour une session Claude locale sur le Mac de régie »** — it
 lists what has already been ruled out, the order to work in, and where to stop.
 
+Measured 2026-09-05: a lost or damaged show file does **not** blank the window — it
+renders the normal UI with factory channel names and no calibration points. A genuinely
+blank window means the server never started. Ask which one it is before theorising.
+
 Short version: secure `shows/` first, diagnose read-only, then **report back rather
 than fix**. Do not change `src/` on this machine while the cause is unconfirmed —
 the point is that the running system stays identical to the one that worked in July.

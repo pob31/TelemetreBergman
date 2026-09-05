@@ -53,21 +53,38 @@ Tu reprends un diagnostic déjà entamé à distance. Lis cette section avant d'
 **« Réparé » veut dire :** le spectacle se rouvre, la distance du Pi défile en direct, et
 en ARM les calques suivent le tulle dans Millumin.
 
-## Hypothèse principale : aucun spectacle n'est chargé
+## Mesuré en labo le 2026-09-05 — ce que chaque panne produit vraiment
 
-La fenêtre s'affiche, mais **vide de contenu**. Au démarrage (`src/cadreur/app.py`,
-`_load_startup_show`), Cadreur rouvre le dernier spectacle utilisé — et **les deux chemins
-d'échec sont volontairement silencieux** pour que le serveur démarre toujours :
+Les quatre pannes « côté données » ont été **rejouées** sur une copie isolée du dépôt, avec
+le vrai serveur. Résultat : **aucune ne donne une fenêtre blanche.** Toutes donnent une
+interface qui s'affiche normalement, avec des canaux **aux noms d'usine** et aucun point de
+calibration ; le serveur répond `{"status":"ok"}` dans les quatre cas.
 
-1. **`cadreur_state.json` tronqué ou perdu** → Cadreur a oublié quel spectacle ouvrir.
-   `src/cadreur/state.py` (`load_last_show_path`) rattrape *toute* erreur et renvoie `None`.
-   Souvent **aucune trace dans le journal**. Les calibrations, elles, sont intactes.
-2. **Le fichier `shows/<spectacle>.json` lui-même tronqué** → `load_show` lève une erreur,
-   rattrapée et journalisée : `Could not load last show ...` dans `cadreur_gui.log`.
+| Cas rejoué | Ce qu'on lit dans le journal | Interface |
+|---|---|---|
+| `cadreur_state.json` absent | **rien du tout** | canaux « Face 1 »… |
+| spectacle disparu | `Could not load last show … : Show file not found: X.json` | idem |
+| spectacle tronqué | `Could not load last show … : Unreadable show file X.json: Expecting …` | idem |
+| lecture refusée (TCC, ou fichier évincé par iCloud) | `Startup backup failed … [Errno 13] Permission denied` **puis** `Could not load last show …` | idem |
 
-Les deux viennent d'un **arrêt brutal** (machine rangée alors que l'app tournait, ou
-batterie à plat pendant une écriture). Les deux **survivent aux redémarrages**, puisque le
-dégât est sur le disque — ce qui explique que rebooter ne change rien.
+Autrement dit : un spectacle perdu, tronqué ou illisible **ne peut pas** produire une
+fenêtre blanche. Il produit une interface complète mais **remise à zéro**.
+
+**Le signe qui ne trompe pas :** si les canaux s'appellent « Face 1 / Face 2 / Face 3 » et
+« Rétro 1… » — les noms d'usine — le spectacle n'est pas chargé. Si Stefo avait renommé ses
+canaux, leurs vrais noms doivent réapparaître une fois le bon spectacle ouvert.
+
+## Donc : que veut dire exactement « fenêtre vide » ?
+
+C'est la question à poser en premier, elle sépare deux familles de causes sans recouvrement.
+
+- **L'interface s'affiche, canaux aux noms d'usine, aucun point de calibration** → côté
+  **données**. Le spectacle n'est pas chargé. Rien n'est perdu : le rouvrir depuis
+  l'interface (ou vérifier qu'on est bien dans le bon dossier — voir plus bas).
+- **Fenêtre réellement blanche ou sombre, aucun élément d'interface** → côté **serveur**.
+  Le serveur n'a pas démarré, ou `src/cadreur/gui.py` a trouvé le port 8080 déjà occupé par
+  un autre logiciel et a ouvert la fenêtre sur *sa* page à lui. C'est la piste n°1 pour une
+  fenêtre vraiment vide, et le journal tranche immédiatement.
 
 ## ⚠️ Avant toute chose : mettre les calibrations à l'abri
 
@@ -99,7 +116,7 @@ normale (bandeau du haut, gros bouton ARM) mais sans canaux ni distance ?**
 
 | Observation | Diagnostic | Suite |
 |---|---|---|
-| L'interface s'affiche, mais **aucun canal**, aucune distance | Hypothèse principale : pas de spectacle chargé | **Ouvrir le spectacle** depuis l'interface. Si le fichier est refusé, restaurer le plus récent fichier sain de `shows/backups/`. |
+| L'interface s'affiche, canaux aux **noms d'usine** (« Face 1 »…), aucun point | Le spectacle n'est pas chargé (mesuré : c'est bien ce que ça donne) | **Ouvrir le spectacle** depuis l'interface. Si le fichier est refusé, restaurer le plus récent fichier sain de `shows/backups/`. |
 | Fenêtre **totalement blanche/noire**, aucun élément | Le serveur n'a pas démarré, ou un autre logiciel occupe le port | Voir les sections `PORT` et `JOURNAL` de la sortie du script (ci-dessous). |
 | Journal : `Server already running on :8080 — opening a window on it` | **Un autre programme occupe le port 8080.** `src/cadreur/gui.py` vérifie seulement que *quelque chose* répond, pas que c'est Cadreur : il n'a donc pas démarré son serveur et affiche la page d'un inconnu. | Changer le port dans `cadreur.toml` : `[web] port = 8090`, puis relancer. |
 | Journal : `Could not load last show ...` | Fichier spectacle abîmé | Restaurer depuis `shows/backups/` (le script marque chaque fichier `OK` ou `ABIME`). |
