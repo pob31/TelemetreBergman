@@ -17,6 +17,10 @@ rosc = "0.11"
 # way a hand-rolled SSE reader would not be.
 reqwest = { version = "0.12", default-features = false, features = ["stream"] }
 futures-util = "0.3"
+axum = "0.8"
+# The web UI is embedded from src/cadreur/web/ — one copy, shared with the
+# Python build, so the two can never drift apart.
+include_dir = "0.7"
 time = { version = "0.3", features = ["formatting", "local-offset", "macros"] }
 
 [profile.release]

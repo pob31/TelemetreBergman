@@ -222,10 +222,9 @@ impl Engine {
             rt.mode = mode;
         }
 
-        let mut values: Option<Values> = None;
         let mut sending = false;
 
-        match mode {
+        let values: Option<Values> = match mode {
             Mode::Manual => {
                 let m = state.manual_of(key);
                 let rt = self.rt.get_mut(key).expect("inserted above");
@@ -238,7 +237,7 @@ impl Engine {
                     rt.policy.mark_sent(v, now);
                     sending = true;
                 }
-                values = Some(v);
+                Some(v)
             }
             Mode::Play => {
                 let t = target.expect("play implies a target");
@@ -254,14 +253,12 @@ impl Engine {
                     rt.policy.mark_sent(v, now);
                     sending = true;
                 }
-                values = Some(v);
+                Some(v)
             }
-            Mode::Idle => {
-                // Zero OSC. Show the would-be values so the operator can see
-                // what arming or enabling would send.
-                values = target.map(round_for_send);
-            }
-        }
+            // Idle: zero OSC. Show the would-be values so the operator can see
+            // what arming or enabling would send.
+            Mode::Idle => target.map(round_for_send),
+        };
 
         ChannelRuntime {
             gate,

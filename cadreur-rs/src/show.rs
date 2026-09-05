@@ -322,7 +322,7 @@ pub fn unique_id(base: &str, taken: &[String]) -> String {
     let mut n = 2;
     loop {
         let candidate = format!("{base}-{n}");
-        if !taken.iter().any(|t| *t == candidate) {
+        if !taken.contains(&candidate) {
             return candidate;
         }
         n += 1;
@@ -373,7 +373,7 @@ fn norm_channel(raw: Option<&Value>, beamer: BeamerKey, index: usize, taken: &[S
     if let Some(name) = o.get("name").and_then(Value::as_str).filter(|s| !s.is_empty()) {
         d.name = name.to_string();
     }
-    d.enabled = o.get("enabled").map_or(true, |v| match v {
+    d.enabled = o.get("enabled").is_none_or(|v| match v {
         Value::Bool(b) => *b,
         Value::Null => false,
         Value::Number(n) => n.as_f64().is_some_and(|x| x != 0.0),
@@ -474,7 +474,7 @@ fn migrate_v1(data: &Value) -> Value {
                 .and_then(Value::as_str)
                 .unwrap_or("M1"),
         },
-        "lens_memories": data.get("lens_memories").cloned().unwrap_or_else(|| json!(null)),
+        "lens_memories": data.get("lens_memories").cloned().unwrap_or(Value::Null),
         "smoothing": data.get("smoothing").cloned().unwrap_or_else(|| json!({})),
         "beamers": beamers,
     })
