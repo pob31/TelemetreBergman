@@ -10,6 +10,13 @@ license = "MIT"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 toml = "0.9"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "time", "sync", "signal"] }
+rosc = "0.11"
+# HTTP only, no TLS: the Pi serves plain HTTP on the stage LAN, and dropping
+# TLS keeps the binary small. hyper's chunked decoding is battle-tested in a
+# way a hand-rolled SSE reader would not be.
+reqwest = { version = "0.12", default-features = false, features = ["stream"] }
+futures-util = "0.3"
 time = { version = "0.3", features = ["formatting", "local-offset", "macros"] }
 
 [profile.release]
