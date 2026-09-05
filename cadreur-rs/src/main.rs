@@ -12,8 +12,9 @@ use cadreur::api::{self, App};
 use cadreur::config::{self, Config};
 use cadreur::engine::{Engine, TICK_S};
 use cadreur::millumin::MilluminIo;
+use cadreur::permissions;
 use cadreur::show;
-use cadreur::state::{Shared, lock, monotonic, shared};
+use cadreur::state::{Shared, Source, lock, monotonic, shared};
 use cadreur::telemetre::Telemetre;
 
 /// Reopens the last show. Both failure paths are reported to the operator
@@ -39,6 +40,40 @@ fn load_startup_show(state: &Shared) {
     }
 }
 
+/// On a genuine first launch, and only then, check whether the telemetre ever
+/// answered. If it did not and its address is on the LAN, the most likely
+/// cause is a dismissed Local Network prompt — which is invisible from the
+/// interface. Gated on a marker file so it can never interrupt a show later:
+/// on any subsequent run this says nothing, whatever the network is doing.
+fn spawn_first_launch_permission_check(cfg: &Config, state: &Shared) {
+    let Some(host) = permissions::host_of_url(&cfg.telemetre.url) else { return };
+    if !permissions::needs_local_network(&host) {
+        return;
+    }
+    let marker = config::data_dir().join(".first-launch-done");
+    let first_launch = !marker.exists();
+    let state = state.clone();
+    tokio::spawn(async move {
+        // Long enough for a working Pi to answer, and for the operator to have
+        // dealt with the prompt.
+        tokio::time::sleep(Duration::from_secs(20)).await;
+        let reachable = {
+            let st = lock(&state);
+            st.distance().1 || st.source_state(monotonic()) != Source::Disconnected
+        };
+        if reachable {
+            let _ = std::fs::write(&marker, "");
+            return;
+        }
+        let hint = permissions::local_network_hint(&host);
+        eprintln!("\n{hint}\n");
+        if first_launch {
+            permissions::alert("Cadreur — autorisation réseau local", &hint);
+            let _ = std::fs::write(&marker, "");
+        }
+    });
+}
+
 #[tokio::main]
 async fn main() {
     let headless = std::env::args().any(|a| a == "--headless");
@@ -52,6 +87,15 @@ async fn main() {
     let engine = Arc::new(Mutex::new(Engine::new(io.clone())));
 
     load_startup_show(&state);
+
+    // Say up front what macOS is about to ask for. The Local Network prompt
+    // appears once; a dismissed prompt leaves the Pi permanently unreachable
+    // with the interface showing nothing more useful than "Pi hors ligne".
+    let notes = permissions::startup_notes(&cfg);
+    for n in &notes {
+        eprintln!("Autorisation attendue — {n}");
+    }
+    spawn_first_launch_permission_check(&cfg, &state);
 
     // 20 Hz engine tick.
     let engine_task = {

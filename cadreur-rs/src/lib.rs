@@ -9,6 +9,7 @@ pub mod config;
 pub mod engine;
 pub mod interp;
 pub mod millumin;
+pub mod permissions;
 pub mod show;
 pub mod state;
 pub mod telemetre;

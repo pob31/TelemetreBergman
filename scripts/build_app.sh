@@ -8,11 +8,19 @@
 # beside it. The operator's data lives in ~/Library/Application Support/Cadreur
 # and is never touched by a rebuild.
 #
-# Notarization needs a keychain profile, created once by you:
-#   xcrun notarytool store-credentials "cadreur-notary" \
-#     --apple-id <your-apple-id> --team-id TVYU3CS2N7
-# It prompts for an app-specific password from appleid.apple.com. Nothing
-# secret is stored in this repo.
+# Notarization takes credentials one of two ways.
+#
+#   Locally — a keychain profile you create once:
+#     xcrun notarytool store-credentials "cadreur-notary" \
+#       --apple-id <your-apple-id> --team-id TVYU3CS2N7
+#
+#   In CI — an App Store Connect API key, via three env vars:
+#     NOTARY_KEY_PATH     path to the .p8 private key
+#     NOTARY_API_KEY_ID   the key's ID
+#     NOTARY_API_ISSUER   the issuer UUID
+#
+# The API key path wins when NOTARY_KEY_PATH is set. Nothing secret is stored
+# in this repo either way.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -93,12 +101,23 @@ echo "==> Zipping for submission"
 rm -f "$ZIP"
 /usr/bin/ditto -c -k --keepParent "$APP" "$ZIP"
 
-echo "==> Submitting to Apple (this waits for the verdict)"
-if ! xcrun notarytool submit "$ZIP" --keychain-profile "$PROFILE" --wait; then
+# An API key beats a keychain profile: CI has no keychain profile, and the key
+# is revocable on its own without touching the Apple ID.
+if [ -n "${NOTARY_KEY_PATH:-}" ]; then
+  NOTARY_AUTH=(--key "$NOTARY_KEY_PATH"
+               --key-id "${NOTARY_API_KEY_ID:?NOTARY_API_KEY_ID is required with NOTARY_KEY_PATH}"
+               --issuer "${NOTARY_API_ISSUER:?NOTARY_API_ISSUER is required with NOTARY_KEY_PATH}")
+  echo "==> Submitting to Apple with an App Store Connect API key"
+else
+  NOTARY_AUTH=(--keychain-profile "$PROFILE")
+  echo "==> Submitting to Apple with keychain profile '$PROFILE'"
+fi
+
+if ! xcrun notarytool submit "$ZIP" "${NOTARY_AUTH[@]}" --wait; then
   echo
   echo "Notarization failed. For the reason:"
-  echo "  xcrun notarytool history --keychain-profile $PROFILE"
-  echo "  xcrun notarytool log <submission-id> --keychain-profile $PROFILE"
+  echo "  xcrun notarytool history ${NOTARY_AUTH[*]}"
+  echo "  xcrun notarytool log <submission-id> ${NOTARY_AUTH[*]}"
   exit 1
 fi
 

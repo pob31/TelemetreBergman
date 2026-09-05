@@ -269,6 +269,33 @@ possibles (fichiers évincés par iCloud, dossier protégé, mauvaise copie du
 projet) ne peuvent plus se produire. Et remplacer l'application ne touche
 jamais tes spectacles.
 
+### Autorisations macOS au premier lancement
+
+Au tout premier démarrage, macOS pose **une** question :
+
+> « Cadreur » souhaite accéder aux appareils de votre réseau local.
+
+**Répondre « Autoriser ».** C'est indispensable : c'est par le réseau local que
+Cadreur lit la distance mesurée par le boîtier télémètre.
+
+> ⚠️ macOS ne pose cette question **qu'une seule fois**. Si elle est refusée ou
+> fermée par erreur, le télémètre devient injoignable pour toujours et
+> l'interface affiche seulement « Pi hors ligne » — impossible de deviner que
+> c'est une autorisation. Cadreur détecte ce cas au premier lancement et
+> affiche le chemin exact à suivre.
+
+Pour corriger après coup :
+**Réglages Système → Confidentialité et sécurité → Réseau local → activer Cadreur**,
+puis **quitter Cadreur (⌘Q) et le relancer** (les autorisations ne s'appliquent
+qu'au démarrage du processus).
+
+Une seconde question apparaît **uniquement** si tu mets `[web] host = "0.0.0.0"`
+dans `cadreur.toml` pour piloter depuis une tablette : le pare-feu demande
+d'accepter les connexions entrantes → **Autoriser**.
+
+Avec les réglages par défaut, il n'y a **rien d'autre** à autoriser : Millumin
+est joint en local (127.0.0.1), et macOS n'exige aucune autorisation pour ça.
+
 ### Reprendre les spectacles de l'installation actuelle
 
 Deux possibilités :
