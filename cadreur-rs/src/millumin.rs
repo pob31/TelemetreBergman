@@ -37,10 +37,8 @@ pub struct MilluminIo {
 
 impl MilluminIo {
     pub fn new(cfg: &MilluminCfg) -> Self {
-        let dest = (cfg.host.as_str(), cfg.port)
-            .to_socket_addrs()
-            .ok()
-            .and_then(|mut it| it.next());
+        let dest =
+            (cfg.host.as_str(), cfg.port).to_socket_addrs().ok().and_then(|mut it| it.next());
         let socket = match UdpSocket::bind("0.0.0.0:0") {
             Ok(s) => Some(s),
             Err(e) => {
@@ -50,7 +48,9 @@ impl MilluminIo {
         };
         match dest {
             Some(d) => eprintln!("OSC out -> {d}"),
-            None => eprintln!("Cannot resolve {}:{} — Millumin will not be driven", cfg.host, cfg.port),
+            None => {
+                eprintln!("Cannot resolve {}:{} — Millumin will not be driven", cfg.host, cfg.port)
+            }
         }
         Self { socket, dest }
     }
@@ -145,8 +145,7 @@ mod tests {
 
     #[test]
     fn a_bang_carries_no_arguments() {
-        let packet =
-            OscPacket::Message(OscMessage { addr: "/front/layer/1".into(), args: vec![] });
+        let packet = OscPacket::Message(OscMessage { addr: "/front/layer/1".into(), args: vec![] });
         let buf = encoder::encode(&packet).expect("encodes");
         assert!(buf.windows(1).any(|w| w == b","));
         // no 'f' type tag: the trigger is the address alone

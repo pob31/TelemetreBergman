@@ -98,10 +98,7 @@ fn as_bool(v: &Value) -> bool {
 fn sanitize_name(name: &str) -> String {
     let cleaned: String = name
         .chars()
-        .filter(|c| {
-            c.is_ascii_alphanumeric()
-                || "àâäéèêëîïôöùûüç._ -".contains(*c)
-        })
+        .filter(|c| c.is_ascii_alphanumeric() || "àâäéèêëîïôöùûüç._ -".contains(*c))
         .collect();
     let trimmed = cleaned.trim();
     if trimmed.is_empty() { "show".to_string() } else { trimmed.to_string() }
@@ -195,7 +192,10 @@ async fn channel_add(State(app): State<App>, Path(b): Path<String>, body: Bytes)
     ok(json!({"ok": true, "id": ch.id}))
 }
 
-async fn channel_delete(State(app): State<App>, Path((b, cid)): Path<(String, String)>) -> Response {
+async fn channel_delete(
+    State(app): State<App>,
+    Path((b, cid)): Path<(String, String)>,
+) -> Response {
     let b = match beamer(&b) {
         Ok(b) => b,
         Err(e) => return *e,
@@ -699,7 +699,9 @@ async fn set_meta(State(app): State<App>, body: Bytes) -> Response {
 
 // --- SSE snapshot stream -----------------------------------------------------
 
-async fn stream(State(app): State<App>) -> Sse<impl futures_util::Stream<Item = Result<Event, Infallible>>> {
+async fn stream(
+    State(app): State<App>,
+) -> Sse<impl futures_util::Stream<Item = Result<Event, Infallible>>> {
     let period = Duration::from_secs_f64(1.0 / SNAPSHOT_HZ);
     let s = futures_util::stream::unfold((app, true), move |(app, first)| async move {
         if !first {
@@ -735,7 +737,10 @@ async fn static_files(uri: axum::http::Uri) -> Response {
         return (StatusCode::NOT_FOUND, "not found").into_response();
     };
     let mut headers = HeaderMap::new();
-    headers.insert(header::CONTENT_TYPE, HeaderValue::from_static(content_type(file.path().to_str().unwrap_or(""))));
+    headers.insert(
+        header::CONTENT_TYPE,
+        HeaderValue::from_static(content_type(file.path().to_str().unwrap_or(""))),
+    );
     // Revalidate every time: the Python defeated stale bundle caching the same
     // way, after a stale app.js cost a debugging session.
     headers.insert(header::CACHE_CONTROL, HeaderValue::from_static("no-cache"));

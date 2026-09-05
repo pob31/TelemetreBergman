@@ -143,7 +143,8 @@ impl Engine {
             for cid in ids {
                 let key = State::chan_key(b, &cid);
                 live_keys.push(key.clone());
-                let out = self.tick_channel(state, b, &cid, &key, now, dt, sm, armed, abs_m, ever_usable);
+                let out =
+                    self.tick_channel(state, b, &cid, &key, now, dt, sm, armed, abs_m, ever_usable);
                 state.channels_state.insert(key, out);
             }
         }

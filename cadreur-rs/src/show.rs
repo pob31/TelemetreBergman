@@ -32,10 +32,8 @@ pub const DEFAULT_LENS_MEMORIES: [&str; 3] = ["M1", "M2", "M3"];
 /// operator can find the layer being calibrated from the stage.
 pub const OSC_KEYS: [&str; 4] = ["osc_scale", "osc_posv", "osc_posh", "osc_show"];
 
-const ISO: &[FormatItem] =
-    format_description!("[year]-[month]-[day]T[hour]:[minute]:[second]Z");
-const STAMP: &[FormatItem] =
-    format_description!("[year][month][day]-[hour][minute][second]");
+const ISO: &[FormatItem] = format_description!("[year]-[month]-[day]T[hour]:[minute]:[second]Z");
+const STAMP: &[FormatItem] = format_description!("[year][month][day]-[hour][minute][second]");
 
 /// A show file we refuse to load or apply, with an operator-readable reason.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -352,9 +350,8 @@ fn norm_trim(raw: Option<&Value>) -> Trim {
 fn norm_cal_set(raw: Option<&Value>) -> CalSet {
     let empty = serde_json::Map::new();
     let o = raw.and_then(Value::as_object).unwrap_or(&empty);
-    let points = o.get("points").and_then(Value::as_array).map_or_else(Vec::new, |a| {
-        normalize_points(a)
-    });
+    let points =
+        o.get("points").and_then(Value::as_array).map_or_else(Vec::new, |a| normalize_points(a));
     CalSet {
         // "linear" is the only interpolation this build knows.
         interp: "linear".into(),
@@ -382,8 +379,7 @@ fn norm_channel(raw: Option<&Value>, beamer: BeamerKey, index: usize, taken: &[S
         Value::Object(m) => !m.is_empty(),
     });
     if let Some(cals) = o.get("calibrations").and_then(Value::as_object) {
-        d.calibrations =
-            cals.iter().map(|(k, v)| (k.clone(), norm_cal_set(Some(v)))).collect();
+        d.calibrations = cals.iter().map(|(k, v)| (k.clone(), norm_cal_set(Some(v)))).collect();
     }
     for key in OSC_KEYS {
         if let Some(a) = o.get(key).and_then(Value::as_str).filter(|s| !s.is_empty()) {
@@ -603,10 +599,14 @@ pub fn delete_channel(show: &mut Show, b: BeamerKey, cid: &str) -> Result<(), Sh
     Ok(())
 }
 
-pub fn rename_channel(show: &mut Show, b: BeamerKey, cid: &str, name: &str) -> Result<(), ShowError> {
-    let ch = show
-        .channel_mut(b, cid)
-        .ok_or_else(|| ShowError(format!("Unknown channel '{cid}'.")))?;
+pub fn rename_channel(
+    show: &mut Show,
+    b: BeamerKey,
+    cid: &str,
+    name: &str,
+) -> Result<(), ShowError> {
+    let ch =
+        show.channel_mut(b, cid).ok_or_else(|| ShowError(format!("Unknown channel '{cid}'.")))?;
     if !name.is_empty() {
         ch.name = name.to_string();
     }
@@ -630,9 +630,8 @@ pub fn set_channel_osc(
         }
         pending.push((key, a));
     }
-    let ch = show
-        .channel_mut(b, cid)
-        .ok_or_else(|| ShowError(format!("Unknown channel '{cid}'.")))?;
+    let ch =
+        show.channel_mut(b, cid).ok_or_else(|| ShowError(format!("Unknown channel '{cid}'.")))?;
     for (key, a) in pending {
         ch.set_osc(key, a);
     }
@@ -967,7 +966,10 @@ mod tests {
         let good = json!({"osc_scale": "/front/scale/9"});
         set_channel_osc(&mut doc, BeamerKey::Front, &cid, good.as_object().expect("obj"))
             .expect("accepts");
-        assert_eq!(doc.channel(BeamerKey::Front, &cid).expect("exists").osc_scale, "/front/scale/9");
+        assert_eq!(
+            doc.channel(BeamerKey::Front, &cid).expect("exists").osc_scale,
+            "/front/scale/9"
+        );
 
         let bad = json!({"osc_scale": "bad addr"});
         assert!(
@@ -975,7 +977,10 @@ mod tests {
                 .is_err()
         );
         // and the good value survived the rejected write
-        assert_eq!(doc.channel(BeamerKey::Front, &cid).expect("exists").osc_scale, "/front/scale/9");
+        assert_eq!(
+            doc.channel(BeamerKey::Front, &cid).expect("exists").osc_scale,
+            "/front/scale/9"
+        );
     }
 
     #[test]

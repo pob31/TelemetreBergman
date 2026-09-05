@@ -250,9 +250,8 @@ mod tests {
 
     #[test]
     fn unknown_keys_are_ignored() {
-        let c: Config =
-            toml::from_str("[web]\nport = 9000\nmystery = 1\n\n[nonsense]\nx = 2\n")
-                .expect("parses");
+        let c: Config = toml::from_str("[web]\nport = 9000\nmystery = 1\n\n[nonsense]\nx = 2\n")
+            .expect("parses");
         assert_eq!(c.web.port, 9000);
     }
 

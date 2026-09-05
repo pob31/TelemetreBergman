@@ -1,0 +1,7 @@
+# Cadreur is built from small value types — Point, Values, Trim, Manual,
+# Smoothing — where a one-line literal reads better than five lines. rustfmt's
+# default struct_lit_width of 18 explodes nearly all of them, which costs about
+# 500 lines across the crate and gains nothing. "Max" is a stable option and
+# keeps anything that fits inside max_width on one line.
+max_width = 100
+use_small_heuristics = "Max"

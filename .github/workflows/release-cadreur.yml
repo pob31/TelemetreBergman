@@ -73,7 +73,9 @@ jobs:
 
       - name: Lint
         working-directory: cadreur-rs
-        run: cargo clippy --all-targets --locked -- -D warnings
+        run: |
+          cargo fmt --check
+          cargo clippy --all-targets --locked -- -D warnings
 
       - name: Check the tag matches Cargo.toml
         id: version

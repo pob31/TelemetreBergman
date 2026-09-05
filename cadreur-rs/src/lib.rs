@@ -11,7 +11,7 @@ pub mod interp;
 pub mod millumin;
 pub mod permissions;
 pub mod show;
+pub mod smoothing;
 pub mod state;
 pub mod telemetre;
 pub mod window;
-pub mod smoothing;

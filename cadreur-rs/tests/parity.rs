@@ -7,7 +7,9 @@
 //!
 //! Regenerate with `.venv/bin/python cadreur-rs/tests/gen_fixtures.py`.
 
-use cadreur::interp::{Clamped, Point, insert_point, interpolate, normalize_points, round_for_send};
+use cadreur::interp::{
+    Clamped, Point, insert_point, interpolate, normalize_points, round_for_send,
+};
 use serde_json::Value;
 
 fn point_of(v: &Value) -> Point {

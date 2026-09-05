@@ -254,8 +254,7 @@ impl State {
         if !self.sse_connected {
             return Source::Disconnected;
         }
-        let fresh = (now - self.last_usable) * 1000.0
-            <= self.cfg.telemetre.stale_after_ms as f64;
+        let fresh = (now - self.last_usable) * 1000.0 <= self.cfg.telemetre.stale_after_ms as f64;
         if self.ever_usable && fresh { Source::Live } else { Source::Stale }
     }
 
@@ -485,16 +484,32 @@ mod tests {
     fn snapshot_shape_matches_what_the_ui_reads() {
         let s = st();
         let v = serde_json::to_value(s.snapshot()).expect("serializes");
-        for key in
-            ["distance", "armed", "settings", "lens_memories", "smoothing", "beamers", "show", "millumin"]
-        {
+        for key in [
+            "distance",
+            "armed",
+            "settings",
+            "lens_memories",
+            "smoothing",
+            "beamers",
+            "show",
+            "millumin",
+        ] {
             assert!(v.get(key).is_some(), "snapshot missing {key}");
         }
         assert_eq!(v["distance"]["source"], "disconnected");
         assert_eq!(v["beamers"]["front"].as_array().expect("array").len(), 4);
         let ch = &v["beamers"]["front"][0];
-        for key in ["id", "name", "enabled", "osc_scale", "cal_key", "points", "trim", "manual", "n_points"]
-        {
+        for key in [
+            "id",
+            "name",
+            "enabled",
+            "osc_scale",
+            "cal_key",
+            "points",
+            "trim",
+            "manual",
+            "n_points",
+        ] {
             assert!(ch.get(key).is_some(), "channel view missing {key}");
         }
         assert_eq!(ch["name"], "Face 1");

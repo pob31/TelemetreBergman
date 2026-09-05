@@ -196,11 +196,7 @@ pub fn round_dp(x: f64, dp: i32) -> f64 {
 /// All outputs are normalised 0..1 -> 4 dp, below the dead-band so rounding
 /// never fights the send policy.
 pub fn round_for_send(v: Values) -> Values {
-    Values {
-        scale: round_dp(v.scale, 4),
-        pos_x: round_dp(v.pos_x, 4),
-        pos_y: round_dp(v.pos_y, 4),
-    }
+    Values { scale: round_dp(v.scale, 4), pos_x: round_dp(v.pos_x, 4), pos_y: round_dp(v.pos_y, 4) }
 }
 
 #[cfg(test)]

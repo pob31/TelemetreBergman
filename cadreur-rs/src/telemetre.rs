@@ -23,7 +23,8 @@ const READ_TIMEOUT: Duration = Duration::from_secs(20);
 /// and Invert Direction on the Pi, since sign squared is 1.
 pub fn reconstruct_abs_m(payload: &Value) -> Option<f64> {
     let pos = payload.get("position_m").and_then(Value::as_f64)?;
-    let sign = if payload.get("sign").and_then(Value::as_f64).unwrap_or(1.0) < 0.0 { -1.0 } else { 1.0 };
+    let sign =
+        if payload.get("sign").and_then(Value::as_f64).unwrap_or(1.0) < 0.0 { -1.0 } else { 1.0 };
     let zero_cm = payload.get("zero_cm").and_then(Value::as_f64).unwrap_or(0.0);
     Some(pos * sign + zero_cm / 100.0)
 }
