@@ -17,6 +17,26 @@ sw_vers 2>/dev/null
 uptime
 echo "dossier : $(pwd)"
 
+line "COMPTE UTILISATEUR"
+me="$(whoami)"; owner="$(stat -f '%Su' . 2>/dev/null)"
+echo "session ouverte par : $me (uid $(id -u))"
+echo "proprietaire du dossier : $owner"
+if [ "$me" != "$owner" ]; then
+  echo "ATTENTION : le dossier appartient a un AUTRE compte que celui ouvert."
+  echo "  -> autorisations macOS (confidentialite) et Dock sont propres a chaque compte."
+fi
+echo "comptes sur cette machine :"
+dscl . -list /Users 2>/dev/null | grep -v '^_' | grep -vE '^(daemon|nobody|root)$' | sed 's/^/  /'
+
+line "AUTRES COPIES DU PROJET SUR LA MACHINE"
+echo "(si Cadreur s'ouvre vide, c'est peut-etre une copie SANS les spectacles)"
+find /Users /Volumes -maxdepth 6 -name cadreur.example.toml 2>/dev/null | while read -r c; do
+  d=$(dirname "$c")
+  n=$(ls "$d"/shows/*.json 2>/dev/null | wc -l | tr -d ' ')
+  here=""; [ "$d" = "$(pwd)" ] && here="   <-- dossier analyse ici"
+  echo "  $d   ($n fichier(s) spectacle)$here"
+done
+
 line "SPECTACLES (shows/) — le plus important"
 ls -la shows/ 2>&1
 line "SAUVEGARDES (shows/backups/)"
@@ -31,6 +51,30 @@ for f in shows/*.json shows/backups/*.json; do
     echo "ABIME   $(wc -c < "$f" | tr -d ' ') octets  $f"
   fi
 done
+
+line "ICLOUD / EMPLACEMENT PROTEGE"
+case "$(pwd)" in
+  "$HOME"/Documents/*|"$HOME"/Desktop/*|"$HOME"/Downloads/*|*/Mobile\ Documents/*)
+    echo "ATTENTION : le dossier est dans une zone iCloud/protegee -> $(pwd)"
+    echo "  (voir LISEZMOI.md section 2 : a deplacer vers ~/SDLVC/)" ;;
+  *) echo "emplacement OK (hors Documents/Bureau/Telechargements/iCloud)" ;;
+esac
+echo "-- fichiers evinces par iCloud (taille non nulle, 0 bloc sur disque) --"
+found=0
+for f in shows/*.json shows/backups/*.json cadreur_state.json cadreur.toml; do
+  [ -e "$f" ] || continue
+  read -r sz blk <<< "$(stat -f '%z %b' "$f" 2>/dev/null)"
+  if [ "${sz:-0}" -gt 0 ] && [ "${blk:-1}" -eq 0 ]; then
+    echo "EVINCE  $f  ($sz octets annonces, 0 sur disque -> a retelecharger, exige internet)"
+    found=1
+  fi
+done
+ls -a shows/ shows/backups/ 2>/dev/null | grep -n '\.icloud$' && found=1
+[ "$found" -eq 0 ] && echo "aucun fichier evince : les donnees sont bien sur le disque"
+
+line "REFUS D ACCES (TCC / confidentialite)"
+grep -i -m 5 "operation not permitted\|permission denied" cadreur_gui.log 2>/dev/null \
+  || echo "aucun refus d'acces dans le journal"
 
 line "DERNIER SPECTACLE OUVERT (cadreur_state.json)"
 if [ -f cadreur_state.json ]; then

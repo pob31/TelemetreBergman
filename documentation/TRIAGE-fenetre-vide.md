@@ -103,7 +103,30 @@ normale (bandeau du haut, gros bouton ARM) mais sans canaux ni distance ?**
 | Fenêtre **totalement blanche/noire**, aucun élément | Le serveur n'a pas démarré, ou un autre logiciel occupe le port | Voir les sections `PORT` et `JOURNAL` de la sortie du script (ci-dessous). |
 | Journal : `Server already running on :8080 — opening a window on it` | **Un autre programme occupe le port 8080.** `src/cadreur/gui.py` vérifie seulement que *quelque chose* répond, pas que c'est Cadreur : il n'a donc pas démarré son serveur et affiche la page d'un inconnu. | Changer le port dans `cadreur.toml` : `[web] port = 8090`, puis relancer. |
 | Journal : `Could not load last show ...` | Fichier spectacle abîmé | Restaurer depuis `shows/backups/` (le script marque chaque fichier `OK` ou `ABIME`). |
+| Le script liste **une autre copie du projet** contenant des spectacles | Ce n'est pas le bon dossier qui est ouvert (deuxième copie, autre compte) | Lancer `Cadreur.app` **depuis le dossier qui contient les spectacles**. Rien n'est perdu. |
+| Le script marque des fichiers **EVINCE** (iCloud) | Fichiers évincés par « Optimiser le stockage » après un mois sans usage ; sans internet au théâtre ils ne peuvent pas être retéléchargés | Rebrancher internet le temps que les fichiers redescendent, puis **déplacer le dossier hors de `~/Documents`** (LISEZMOI §2). |
+| `session ouverte par` ≠ `proprietaire du dossier` | Session macOS ouverte sur un autre compte : autorisations de confidentialité et Dock sont propres à chaque compte | Se reconnecter sur le compte habituel de la régie. |
 | Journal : `Operation not permitted` | Dossier dans une zone protégée par macOS | Voir §5 de `LISEZMOI.md`. |
+
+## Deux causes d'environnement à écarter avant de suspecter le code
+
+Aucune des deux ne « périme » quoi que ce soit, mais toutes deux se déclenchent après une
+longue période sans usage — ce qui colle au symptôme.
+
+- **Éviction iCloud.** Le dossier est dans `~/Documents`, zone synchronisée. Avec
+  « Optimiser le stockage du Mac », macOS libère les fichiers **non utilisés depuis
+  longtemps** : un mois au placard est exactement le critère. Le fichier reste visible avec
+  sa taille, mais il n'y a plus rien sur le disque, et **sans internet au théâtre il ne peut
+  pas redescendre**. `load_show` échoue, l'erreur est rattrapée, l'interface s'ouvre vide.
+  Le script détecte ce cas (taille non nulle, 0 bloc sur disque).
+- **Mauvaise copie / mauvais compte.** S'il existe deux copies du projet sur la machine,
+  celle qui s'ouvre peut être celle **sans** `shows/`. Les autorisations de confidentialité
+  et le Dock étant propres à chaque compte macOS, une session ouverte sur un autre compte
+  donne exactement ce résultat. Le script liste toutes les copies et le nombre de
+  spectacles dans chacune.
+
+Dans les deux cas **les calibrations sont intactes** — elles sont simplement ailleurs, ou
+momentanément pas sur le disque.
 
 ## Récupération
 
