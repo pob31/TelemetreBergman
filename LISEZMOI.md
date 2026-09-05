@@ -219,32 +219,55 @@ Puis **re-glisse Cadreur.app dans le Dock** depuis le nouvel emplacement.
 récupérer le code avec `git clone` (dépôt GitHub) puis recopier `shows/` + `cadreur.toml`.
 (Détails : section « Backup and moving the folder » du README.)
 
-## Si le télémètre a été bougé ou déréglé
+## En tournée : réinstaller dans un nouveau lieu
 
-Les calibrations sont enregistrées en **distance absolue** (ex. 0,45 m /
-4,12 m / 9,95 m). Le calcul est immunisé contre **Set Zero**, **Clear Zero** et
-**Inverser le sens** côté Pi — ça, c'est du logiciel, et c'est prévu.
+À chaque lieu, **deux choses changent indépendamment**, et elles se corrigent
+avec deux outils différents.
 
-Mais si le **boîtier a physiquement bougé** (quelqu'un l'a heurté, il a été
-démonté puis remonté), la même position de tulle ne donne plus la même
-distance. Toutes les calibrations sont alors **décalées d'autant**, et l'image
-tombe à côté.
+### 1. Les vidéoprojecteurs ont bougé → **trim, puis « figer »**
 
-**Comment le vérifier** : amener le tulle sur un repère connu et comparer la
-distance affichée à celle du point de calibration correspondant. Un écart
-constant sur tous les repères = le boîtier a bougé de cette valeur.
+L'image est décalée ou mal dimensionnée, mais **de la même façon à toutes les
+distances**. C'est exactement ce que le **trim** corrige : régler en direct par
+axe, puis **figer** pour l'incorporer dans tous les points d'un coup. Pas
+besoin de recapturer.
 
-**Deux réparations possibles :**
+### 2. Le télémètre a bougé → **décaler les distances**
 
-1. **Le remettre exactement où il était** — le mieux, rien d'autre à refaire.
-2. **Recapturer** — si la position d'origine est perdue. Ce n'est pas si long :
-   le mapping est quasi linéaire, donc **2 points aux extrémités** par canal
-   suffisent presque, un 3ᵉ au milieu affine. Passer les canaux en **Mode
-   calibration**, régler à chaque position, **Capturer tous les canaux**.
+Le boîtier est sur un bras magique, en l'air : sa position n'est jamais
+reproductible d'un lieu à l'autre. Les calibrations étant enregistrées en
+**distance absolue**, tout est alors décalé. Le trim **ne peut pas** corriger
+ça — il ne touche jamais aux distances, volontairement. Et **Set Zero** non
+plus : le calcul est immunisé contre la tare (c'est voulu, pour que les
+calibrations survivent à un re-zéro).
 
-> 💡 Une fois le boîtier définitivement fixé, noter/marquer sa position : en
-> tournée il sera démonté et remonté à chaque lieu, et c'est ce repère qui
-> évite de recalibrer à chaque fois.
+D'abord identifier de quoi il s'agit — amener le tulle sur **deux** repères
+connus et comparer la distance affichée à celle du point calibré :
+
+```bash
+./scripts/offset_show.py --diagnose <cal1> <mesure1> <cal2> <mesure2>
+```
+
+- **écart constant** → le bras a *glissé* le long de l'axe. Réparable :
+  `./scripts/offset_show.py --apply <décalage> shows/<fichier>.json`
+  (écrit un **nouveau** fichier `…-recale.json`, l'original n'est pas touché)
+- **écart proportionnel** → le boîtier a *tourné*. Aucun décalage ne corrige
+  ça : redresser le bras, ou recapturer.
+
+### 3. Ce qui reste → recapturer
+
+Après trim+figer et décalage, ce qui ne colle toujours pas se recapture. Ce
+n'est pas long : le mapping est **quasi linéaire**, donc **2 points aux
+extrémités** par canal suffisent presque, un 3ᵉ au milieu affine. Mettre les
+canaux en **Mode calibration**, régler à une position de tulle, puis
+**« Capturer tous les canaux »** — tous les calques d'un coup.
+
+### Un fichier spectacle par lieu
+
+Ne pas repartir de zéro à chaque fois : **ouvrir le fichier du lieu
+précédent**, l'ajuster (trim+figer, décalage, quelques recaptures), puis
+**Enregistrer sous** au nom du nouveau lieu — `bergman-rennes.json`,
+`bergman-nantes.json`… Les anciens restent dans `shows/`, et un lieu déjà
+visité se rouvre tel quel.
 
 ## Dépannage rapide
 
