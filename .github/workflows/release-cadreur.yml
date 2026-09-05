@@ -51,8 +51,10 @@ jobs:
       - name: Install the pinned Rust toolchain
         working-directory: cadreur-rs
         run: |
-          rustup show          # honours rust-toolchain.toml
+          rustup show          # honours rust-toolchain.toml, components included
+          rustup component add clippy rustfmt   # no-op if already present
           rustc --version
+          cargo clippy --version
 
       - uses: actions/cache@v4
         with:

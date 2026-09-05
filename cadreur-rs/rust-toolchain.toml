@@ -2,3 +2,7 @@
 [toolchain]
 channel = "1.98.1"
 targets = ["aarch64-apple-darwin"]
+# Declared explicitly: CI runners configure rustup with the minimal profile,
+# which omits clippy, so relying on the default profile fails there while
+# working locally.
+components = ["clippy", "rustfmt"]
