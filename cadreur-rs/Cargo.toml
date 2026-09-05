@@ -22,6 +22,8 @@ axum = "0.8"
 # Python build, so the two can never drift apart.
 include_dir = "0.7"
 time = { version = "0.3", features = ["formatting", "local-offset", "macros"] }
+wry = "0.56.1"
+tao = "0.37.0"
 
 [profile.release]
 opt-level = "z"
