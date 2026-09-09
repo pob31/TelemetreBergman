@@ -11,6 +11,11 @@ state.json
 cadreur.toml
 cadreur_state.json
 cadreur_gui.log
+# The Rust build's log, written beside the shows from a source checkout,
+# plus the marker that stops the first-launch permission prompt repeating.
+cadreur.log
+cadreur.log.1
+.first-launch-done
 Cadreur.app/
 shows/*
 !shows/example-show.json
