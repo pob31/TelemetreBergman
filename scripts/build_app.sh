@@ -86,40 +86,73 @@ echo "==> Verifying the signature"
 codesign --verify --strict --verbose=2 "$APP"
 codesign -dv --verbose=4 "$APP" 2>&1 | grep -E "^(Identifier|Authority|TeamIdentifier|Runtime)" || true
 
+# --- disk image -------------------------------------------------------------
+# The installer the operator actually receives: open it, drag Cadreur onto
+# Applications, done. Built AFTER the app is stapled so the copy inside carries
+# its own ticket and validates offline once dragged out.
+make_dmg() {
+  local stage
+  stage="$(mktemp -d)/Cadreur"
+  mkdir -p "$stage"
+  cp -R "$APP" "$stage/"
+  ln -s /Applications "$stage/Applications"
+  rm -f "$DMG"
+  hdiutil create -volname "Cadreur $VERSION" -srcfolder "$stage" \
+    -ov -format UDZO -quiet "$DMG"
+  rm -rf "$(dirname "$stage")"
+  # A signed disk image so Gatekeeper can attribute it before it is opened.
+  codesign --force --timestamp --sign "$IDENTITY" "$DMG"
+  echo "    $(du -h "$DMG" | cut -f1)  $DMG"
+}
+
+DMG="dist/Cadreur-${VERSION}.dmg"
+
+notary_auth() {
+  # An API key beats a keychain profile: CI has no keychain profile, and the
+  # key is revocable on its own without touching the Apple ID.
+  if [ -n "${NOTARY_KEY_PATH:-}" ]; then
+    NOTARY_AUTH=(--key "$NOTARY_KEY_PATH"
+                 --key-id "${NOTARY_API_KEY_ID:?NOTARY_API_KEY_ID is required with NOTARY_KEY_PATH}"
+                 --issuer "${NOTARY_API_ISSUER:?NOTARY_API_ISSUER is required with NOTARY_KEY_PATH}")
+    echo "    (App Store Connect API key)"
+  else
+    NOTARY_AUTH=(--keychain-profile "$PROFILE")
+    echo "    (keychain profile '$PROFILE')"
+  fi
+}
+
+submit() {  # submit <file> <what>
+  if ! xcrun notarytool submit "$1" "${NOTARY_AUTH[@]}" --wait; then
+    echo
+    echo "Notarization of $2 failed. For the reason:"
+    echo "  xcrun notarytool history ${NOTARY_AUTH[*]}"
+    echo "  xcrun notarytool log <submission-id> ${NOTARY_AUTH[*]}"
+    exit 1
+  fi
+}
+
 if [ "$NOTARIZE" -eq 0 ]; then
+  echo "==> Building the disk image"
+  make_dmg
   echo
-  echo "Built (signed, NOT notarized): $APP"
-  echo "Gatekeeper will still challenge this if it is transferred by AirDrop,"
-  echo "mail or download. Re-run with --notarize before sending it anywhere."
+  echo "Built (signed, NOT notarized):"
+  echo "  app: $APP"
+  echo "  dmg: $DMG"
+  echo "Gatekeeper will still challenge these if they are transferred by"
+  echo "AirDrop, mail or download. Re-run with --notarize before sending them."
   exit 0
 fi
 
 ZIP="dist/Cadreur-${VERSION}.zip"
-echo "==> Zipping for submission"
-# ditto, not zip(1): it preserves the bundle structure and extended attributes
-# notarization expects.
+echo "==> Zipping the app for submission"
+# ditto, not zip(1): it preserves the bundle structure and the extended
+# attributes notarization expects.
 rm -f "$ZIP"
 /usr/bin/ditto -c -k --keepParent "$APP" "$ZIP"
 
-# An API key beats a keychain profile: CI has no keychain profile, and the key
-# is revocable on its own without touching the Apple ID.
-if [ -n "${NOTARY_KEY_PATH:-}" ]; then
-  NOTARY_AUTH=(--key "$NOTARY_KEY_PATH"
-               --key-id "${NOTARY_API_KEY_ID:?NOTARY_API_KEY_ID is required with NOTARY_KEY_PATH}"
-               --issuer "${NOTARY_API_ISSUER:?NOTARY_API_ISSUER is required with NOTARY_KEY_PATH}")
-  echo "==> Submitting to Apple with an App Store Connect API key"
-else
-  NOTARY_AUTH=(--keychain-profile "$PROFILE")
-  echo "==> Submitting to Apple with keychain profile '$PROFILE'"
-fi
-
-if ! xcrun notarytool submit "$ZIP" "${NOTARY_AUTH[@]}" --wait; then
-  echo
-  echo "Notarization failed. For the reason:"
-  echo "  xcrun notarytool history ${NOTARY_AUTH[*]}"
-  echo "  xcrun notarytool log <submission-id> ${NOTARY_AUTH[*]}"
-  exit 1
-fi
+echo "==> Submitting the app to Apple"
+notary_auth
+submit "$ZIP" "the app"
 
 echo "==> Stapling the ticket to the app"
 # This is the step that matters for a venue with no internet: with a stapled
@@ -128,12 +161,28 @@ echo "==> Stapling the ticket to the app"
 xcrun stapler staple "$APP"
 xcrun stapler validate "$APP"
 
-echo "==> Final check, as the recipient's Mac will see it"
-spctl -a -vvv -t exec "$APP"
-
+# Re-zip now that the app carries its ticket, so the zip is usable on its own.
 rm -f "$ZIP"
 /usr/bin/ditto -c -k --keepParent "$APP" "$ZIP"
+
+echo "==> Building the disk image around the stapled app"
+make_dmg
+
+echo "==> Submitting the disk image to Apple"
+# The image is notarized in its own right, so the download opens without a
+# warning as well as the app inside it.
+submit "$DMG" "the disk image"
+
+echo "==> Stapling the ticket to the disk image"
+xcrun stapler staple "$DMG"
+xcrun stapler validate "$DMG"
+
+echo "==> Final checks, as the recipient's Mac will see them"
+spctl -a -vvv -t exec "$APP"
+spctl -a -vvv -t open --context context:primary-signature "$DMG"
+
 echo
 echo "Notarized and stapled."
+echo "  dmg: $DMG   <- send this one: the installer"
 echo "  app: $APP"
-echo "  zip: $ZIP   <- send this one; it carries the stapled ticket"
+echo "  zip: $ZIP   <- same app, for anyone who prefers a zip"

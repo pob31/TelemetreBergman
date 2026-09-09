@@ -155,16 +155,21 @@ jobs:
           xcrun stapler validate dist/Cadreur.app
           spctl -a -vvv -t exec dist/Cadreur.app
           codesign --verify --strict --verbose=2 dist/Cadreur.app
+          xcrun stapler validate dist/Cadreur-${{ steps.version.outputs.version }}.dmg
 
-      - name: Checksum
+      - name: Checksums
         id: package
         run: |
           set -euo pipefail
+          V="${{ steps.version.outputs.version }}"
           cd dist
-          ZIP="Cadreur-${{ steps.version.outputs.version }}.zip"
-          shasum -a 256 "$ZIP" > "$ZIP.sha256"
-          cat "$ZIP.sha256"
-          echo "zip=dist/$ZIP" >> "$GITHUB_OUTPUT"
+          shasum -a 256 "Cadreur-$V.dmg" "Cadreur-$V.zip" > "Cadreur-$V.sha256"
+          cat "Cadreur-$V.sha256"
+          {
+            echo "dmg=dist/Cadreur-$V.dmg"
+            echo "zip=dist/Cadreur-$V.zip"
+            echo "sums=dist/Cadreur-$V.sha256"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Publish the release
         if: github.event_name == 'push' || inputs.dry_run == false
@@ -178,9 +183,13 @@ jobs:
           NOTES="$(cat <<EOF
           Cadreur ${VERSION} — l'application de suivi de tulle pour Millumin.
 
-          **Installation** : télécharger le zip, décompresser, glisser \`Cadreur.app\`
-          où tu veux (Applications, une clé USB…), double-cliquer. Rien à installer :
-          ni Python, ni dossier de projet à garder à côté.
+          **Installation** : télécharger le **.dmg**, l'ouvrir, glisser \`Cadreur\`
+          sur \`Applications\`. C'est tout — ni Python, ni dossier de projet à garder
+          à côté. (Le .zip contient la même app, pour qui préfère.)
+
+          ⚠️ **Au premier lancement l'app est vide** : c'est normal, elle n'a pas
+          encore tes spectacles. Copier tes \`shows/*.json\` dans
+          \`~/Library/Application Support/Cadreur/shows/\` puis relancer.
 
           Signée par Developer ID et **notariée par Apple**, ticket agrafé — elle
           s'ouvre sans avertissement macOS et **sans connexion internet**.
@@ -200,8 +209,9 @@ jobs:
             EXTRA=(--target "$GITHUB_SHA")
           fi
           gh release create "$TAG" \
+            "${{ steps.package.outputs.dmg }}" \
             "${{ steps.package.outputs.zip }}" \
-            "${{ steps.package.outputs.zip }}.sha256" \
+            "${{ steps.package.outputs.sums }}" \
             --title "Cadreur ${VERSION}" \
             --notes "$NOTES" \
             "${EXTRA[@]}"
