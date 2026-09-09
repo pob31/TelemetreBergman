@@ -180,26 +180,37 @@ jobs:
           set -euo pipefail
           TAG="${GITHUB_REF_NAME}"
           [ "${GITHUB_REF_TYPE:-}" = "tag" ] || TAG="cadreur-v${VERSION}"
-          NOTES="$(cat <<EOF
-          Cadreur ${VERSION} — l'application de suivi de tulle pour Millumin.
 
-          **Installation** : télécharger le **.dmg**, l'ouvrir, glisser \`Cadreur\`
-          sur \`Applications\`. C'est tout — ni Python, ni dossier de projet à garder
-          à côté. (Le .zip contient la même app, pour qui préfère.)
+          # Written to a file with a QUOTED heredoc, and deliberately not
+          # inside $( ). bash 3.2 — which is what macOS and this runner ship —
+          # mis-parses a heredoc inside a command substitution and starts
+          # reading the body as code, so an odd number of apostrophes in French
+          # prose breaks the build. The 2.0.0 notes only survived by having an
+          # even number. Quoted, in a file, nothing inside is interpreted.
+          cat > "$RUNNER_TEMP/notes.md" <<'NOTES'
+          L'application de suivi de tulle pour Millumin.
+
+          **Installation** : télécharger le **.dmg**, l'ouvrir, glisser `Cadreur`
+          sur `Applications`. C'est tout — ni Python à installer, ni dossier de
+          projet à garder à côté. (Le .zip contient la même app, pour qui préfère.)
 
           ⚠️ **Au premier lancement l'app est vide** : c'est normal, elle n'a pas
-          encore tes spectacles. Copier tes \`shows/*.json\` dans
-          \`~/Library/Application Support/Cadreur/shows/\` puis relancer.
+          encore tes spectacles. Copier tes `shows/*.json` dans
+          `~/Library/Application Support/Cadreur/shows/`, puis relancer.
+
+          Au premier démarrage macOS demande l'accès au **réseau local** :
+          répondre **Autoriser**. C'est par là que Cadreur lit la distance
+          mesurée par le boîtier télémètre.
 
           Signée par Developer ID et **notariée par Apple**, ticket agrafé — elle
           s'ouvre sans avertissement macOS et **sans connexion internet**.
 
-          Tes calibrations vivent dans \`~/Library/Application Support/Cadreur/shows/\`
+          Tes calibrations vivent dans `~/Library/Application Support/Cadreur/shows/`
           et ne sont jamais touchées par une mise à jour.
 
           Apple Silicon (arm64), macOS 11 ou plus récent.
-          EOF
-          )"
+          NOTES
+
           # A tag push has the tag already, so insist it exists rather than
           # silently creating a different one. A manual run creates it from
           # the commit being built.
@@ -213,7 +224,7 @@ jobs:
             "${{ steps.package.outputs.zip }}" \
             "${{ steps.package.outputs.sums }}" \
             --title "Cadreur ${VERSION}" \
-            --notes "$NOTES" \
+            --notes-file "$RUNNER_TEMP/notes.md" \
             "${EXTRA[@]}"
 
       - name: Upload the build for inspection
