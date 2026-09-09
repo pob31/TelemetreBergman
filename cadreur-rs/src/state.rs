@@ -203,7 +203,7 @@ impl State {
     pub fn load_last_show_path(&self) -> Option<PathBuf> {
         let text = std::fs::read_to_string(&self.state_path).ok()?;
         let d: Value = serde_json::from_str(&text)
-            .map_err(|e| eprintln!("Ignoring unreadable {}: {e}", self.state_path.display()))
+            .map_err(|e| crate::log_line!("Ignoring unreadable {}: {e}", self.state_path.display()))
             .ok()?;
         d.get("last_show").and_then(Value::as_str).filter(|s| !s.is_empty()).map(PathBuf::from)
     }
@@ -216,7 +216,7 @@ impl State {
             let _ = std::fs::create_dir_all(parent);
         }
         if let Err(e) = std::fs::write(&self.state_path, body.to_string()) {
-            eprintln!("Could not persist {}: {e}", self.state_path.display());
+            crate::log_line!("Could not persist {}: {e}", self.state_path.display());
         }
     }
 
@@ -290,7 +290,7 @@ impl State {
             }
             Err(e) => {
                 // A failed autosave must never crash the engine.
-                eprintln!("Autosave failed: {e}");
+                crate::log_line!("Autosave failed: {e}");
                 self.dirty_since = Some(now); // retry after another debounce
                 false
             }

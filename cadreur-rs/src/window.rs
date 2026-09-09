@@ -26,8 +26,8 @@ pub fn run(url: &str) {
     {
         Ok(w) => w,
         Err(e) => {
-            eprintln!("Cannot open the window: {e}");
-            eprintln!("Run with --headless and open {url} in a browser instead.");
+            crate::log_line!("Cannot open the window: {e}");
+            crate::log_line!("Run with --headless and open {url} in a browser instead.");
             return;
         }
     };
@@ -42,8 +42,8 @@ pub fn run(url: &str) {
     let _webview = match webview {
         Ok(w) => w,
         Err(e) => {
-            eprintln!("Cannot create the web view: {e}");
-            eprintln!("Run with --headless and open {url} in a browser instead.");
+            crate::log_line!("Cannot create the web view: {e}");
+            crate::log_line!("Run with --headless and open {url} in a browser instead.");
             return;
         }
     };

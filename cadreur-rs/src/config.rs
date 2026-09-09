@@ -175,18 +175,72 @@ pub fn config_path() -> PathBuf {
     data_dir().join("cadreur.toml")
 }
 
+/// Read one section, keeping every key that is valid on its own.
+///
+/// `toml::from_str::<Config>` is all-or-nothing: one mistyped value anywhere
+/// in the file threw the WHOLE config away and silently reverted the Millumin
+/// destination and the telemetre URL to built-in defaults, with the app still
+/// looking perfectly healthy. That is the worst failure this program has —
+/// visibly up, driving nothing. The Python read each section independently and
+/// ignored keys it did not know, so a bad value cost that value and nothing
+/// else. This restores that, one key at a time, and names what it dropped.
+fn section<T>(table: &toml::Table, name: &str, out: &mut T)
+where
+    T: serde::de::DeserializeOwned,
+{
+    let parse = |t: toml::Table| toml::Value::Table(t).try_into::<T>();
+    // toml's errors are multi-line; the log stays one line per event so
+    // `tail` and diagnose_mac.sh remain readable.
+    let one_line =
+        |e: toml::de::Error| e.to_string().split_whitespace().collect::<Vec<_>>().join(" ");
+    let Some(raw) = table.get(name) else { return };
+    let Some(section) = raw.as_table() else {
+        crate::log::line(format!("cadreur.toml: [{name}] is not a section — ignored."));
+        return;
+    };
+    if let Ok(v) = parse(section.clone()) {
+        *out = v;
+        return;
+    }
+    let mut kept = toml::Table::new();
+    for (key, value) in section {
+        let mut probe = kept.clone();
+        probe.insert(key.clone(), value.clone());
+        match parse(probe.clone()) {
+            Ok(_) => kept = probe,
+            Err(e) => crate::log_line!(
+                "cadreur.toml: ignoring [{name}] {key} = {value} ({}); the built-in default is in use.",
+                one_line(e)
+            ),
+        }
+    }
+    if let Ok(v) = parse(kept) {
+        *out = v;
+    }
+}
+
 impl Config {
     /// Unknown keys are ignored, and a malformed file falls back to defaults
     /// with a warning rather than refusing to start — the show must go on.
+    /// A bad value costs only its own key: see `section`.
     pub fn load_from(path: &Path) -> Self {
         let Ok(text) = std::fs::read_to_string(path) else { return Self::default() };
-        match toml::from_str(&text) {
-            Ok(cfg) => cfg,
+        let table: toml::Table = match text.parse() {
+            Ok(t) => t,
             Err(e) => {
-                eprintln!("Ignoring unreadable {}: {e}", path.display());
-                Self::default()
+                crate::log::line(format!(
+                    "Ignoring unreadable {}: {e} — every built-in default is in use.",
+                    path.display()
+                ));
+                return Self::default();
             }
-        }
+        };
+        let mut cfg = Self::default();
+        section(&table, "telemetre", &mut cfg.telemetre);
+        section(&table, "millumin", &mut cfg.millumin);
+        section(&table, "web", &mut cfg.web);
+        section(&table, "shows", &mut cfg.shows);
+        cfg
     }
 
     pub fn load() -> Self {
@@ -271,9 +325,37 @@ mod tests {
 
     #[test]
     fn absolute_shows_dir_is_respected() {
+        let absolute = std::env::temp_dir().join("elsewhere");
         let mut c = Config::default();
-        c.shows.dir = "/tmp/elsewhere".into();
-        assert_eq!(c.shows_dir(), Path::new("/tmp/elsewhere"));
+        c.shows.dir = absolute.to_string_lossy().into_owned();
+        assert_eq!(c.shows_dir(), absolute);
+    }
+
+    #[test]
+    fn one_bad_key_costs_only_that_key() {
+        let dir = std::env::temp_dir().join("cadreur-cfg-test");
+        std::fs::create_dir_all(&dir).expect("tmp dir");
+        let path = dir.join("cadreur.toml");
+        std::fs::write(
+            &path,
+            "[telemetre]
+url = \"http://192.168.0.51\"
+
+             [millumin]
+host = \"10.0.0.9\"
+port = \"5002\"
+
+             [web]
+port = 8099
+",
+        )
+        .expect("write");
+        let c = Config::load_from(&path);
+        assert_eq!(c.millumin.port, 5000, "the mistyped key falls back");
+        assert_eq!(c.millumin.host, "10.0.0.9", "its neighbour survives");
+        assert_eq!(c.telemetre.url, "http://192.168.0.51", "other sections survive");
+        assert_eq!(c.web.port, 8099, "and so does the port the window opens");
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]

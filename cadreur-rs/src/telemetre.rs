@@ -92,7 +92,7 @@ impl Telemetre {
         let client = match reqwest::Client::builder().build() {
             Ok(c) => c,
             Err(e) => {
-                eprintln!("Cannot build the HTTP client: {e}");
+                crate::log_line!("Cannot build the HTTP client: {e}");
                 return;
             }
         };
@@ -101,7 +101,7 @@ impl Telemetre {
             match self.stream_once(&client).await {
                 Ok(()) => backoff = 1.0, // a successful connection resets the backoff
                 Err(e) => {
-                    eprintln!("Telemetre stream error: {e}; reconnecting in {backoff:.0}s");
+                    crate::log_line!("Telemetre stream error: {e}; reconnecting in {backoff:.0}s");
                 }
             }
             lock(&self.state).sse_status(false);
@@ -121,7 +121,7 @@ impl Telemetre {
             return Err(format!("GET {} -> HTTP {}", self.url, resp.status()));
         }
         lock(&self.state).sse_status(true);
-        eprintln!("Telemetre stream connected: {}", self.url);
+        crate::log_line!("Telemetre stream connected: {}", self.url);
 
         let mut stream = resp.bytes_stream();
         let mut buf: Vec<u8> = Vec::new();

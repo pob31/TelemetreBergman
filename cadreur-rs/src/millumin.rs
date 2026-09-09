@@ -42,14 +42,18 @@ impl MilluminIo {
         let socket = match UdpSocket::bind("0.0.0.0:0") {
             Ok(s) => Some(s),
             Err(e) => {
-                eprintln!("Cannot open the OSC socket: {e} — Millumin will not be driven");
+                crate::log_line!("Cannot open the OSC socket: {e} — Millumin will not be driven");
                 None
             }
         };
         match dest {
-            Some(d) => eprintln!("OSC out -> {d}"),
+            Some(d) => crate::log_line!("OSC out -> {d}"),
             None => {
-                eprintln!("Cannot resolve {}:{} — Millumin will not be driven", cfg.host, cfg.port)
+                crate::log_line!(
+                    "Cannot resolve {}:{} — Millumin will not be driven",
+                    cfg.host,
+                    cfg.port
+                )
             }
         }
         Self { socket, dest }
@@ -62,11 +66,11 @@ impl MilluminIo {
         let (Some(socket), Some(dest)) = (&self.socket, self.dest) else { return };
         let packet = OscPacket::Message(OscMessage { addr: address.to_string(), args });
         let Ok(buf) = encoder::encode(&packet) else {
-            eprintln!("Cannot encode OSC for {address}");
+            crate::log_line!("Cannot encode OSC for {address}");
             return;
         };
         if let Err(e) = socket.send_to(&buf, dest) {
-            eprintln!("OSC send failed: {e}");
+            crate::log_line!("OSC send failed: {e}");
         }
     }
 }

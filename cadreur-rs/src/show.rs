@@ -693,7 +693,7 @@ pub fn startup_backup(path: &Path, keep: usize) -> Option<PathBuf> {
     }
     let bytes = std::fs::read(path).ok()?;
     if serde_json::from_slice::<Value>(&bytes).is_err() {
-        eprintln!(
+        crate::log_line!(
             "Startup backup skipped: {} is not valid JSON — keeping existing backups intact",
             path.display()
         );

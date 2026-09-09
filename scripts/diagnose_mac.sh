@@ -72,9 +72,21 @@ done
 ls -a shows/ shows/backups/ 2>/dev/null | grep -n '\.icloud$' && found=1
 [ "$found" -eq 0 ] && echo "aucun fichier evince : les donnees sont bien sur le disque"
 
+# Les deux applications n ecrivent pas au meme endroit : la version Python
+# journalise dans cadreur_gui.log a cote des spectacles, la version Rust dans
+# cadreur.log (dossier de travail) ou ~/Library/Logs/Cadreur/ (app signee).
+JOURNAUX=""
+for f in cadreur_gui.log cadreur.log "$HOME/Library/Logs/Cadreur/cadreur.log"; do
+  [ -f "$f" ] && JOURNAUX="$JOURNAUX $f"
+done
+
 line "REFUS D ACCES (TCC / confidentialite)"
-grep -i -m 5 "operation not permitted\|permission denied" cadreur_gui.log 2>/dev/null \
-  || echo "aucun refus d'acces dans le journal"
+if [ -n "$JOURNAUX" ]; then
+  # shellcheck disable=SC2086
+  grep -E -i -m 5 "operation not permitted|permission denied" $JOURNAUX 2>/dev/null || echo "aucun refus d'acces dans le journal"
+else
+  echo "aucun journal trouve"
+fi
 
 line "DERNIER SPECTACLE OUVERT (cadreur_state.json)"
 if [ -f cadreur_state.json ]; then
@@ -87,8 +99,16 @@ fi
 line "CONFIG (cadreur.toml)"
 cat cadreur.toml 2>&1
 
-line "JOURNAL (cadreur_gui.log, 60 dernières lignes)"
-tail -60 cadreur_gui.log 2>&1
+if [ -n "$JOURNAUX" ]; then
+  for f in $JOURNAUX; do
+    line "JOURNAL ($f, 60 dernieres lignes)"
+    tail -60 "$f" 2>&1
+  done
+else
+  line "JOURNAL"
+  echo "ABSENT - aucun journal ecrit : version Rust anterieure a la correction,"
+  echo "ou l'application n'a jamais demarre."
+fi
 
 PORT=$(sed -n 's/^[[:space:]]*port[[:space:]]*=[[:space:]]*\([0-9]\{1,\}\).*/\1/p' cadreur.toml 2>/dev/null | tail -1)
 PORT=${PORT:-8080}

@@ -93,19 +93,63 @@
 
   // ---- modal ----
   let modalOk = null;
-  function showModal(title, bodyEl, onOk) {
+  let modalClosed = null;   // fired whenever the modal goes away, OK or Cancel
+  function showModal(title, bodyEl, onOk, onClosed) {
     $("modal-title").textContent = title;
     $("modal-body").replaceChildren(bodyEl);
     modalOk = onOk;
+    modalClosed = onClosed || null;
     $("modal-okbtn").style.display = onOk ? "" : "none";
     $("modal").classList.remove("hidden");
   }
-  function hideModal() { $("modal").classList.add("hidden"); modalOk = null; }
+  function hideModal() {
+    $("modal").classList.add("hidden");
+    const closed = modalClosed;
+    modalOk = null;
+    modalClosed = null;
+    if (closed) closed();
+  }
   $("modal-cancel").addEventListener("click", hideModal);
   $("modal-okbtn").addEventListener("click", async () => {
     if (modalOk && (await modalOk()) === false) return;
     hideModal();
   });
+
+  // WKWebView only shows prompt()/confirm() if the host implements the
+  // WKUIDelegate JS panels. pywebview does; wry — the Rust build's window —
+  // implements only the file-open panel, so prompt() returned null and
+  // confirm() returned false with no dialog at all, and every control behind
+  // them was silently dead. Both builds now use the app's own modal, so they
+  // behave identically and neither depends on the host's dialogs.
+  function askText(title, value) {
+    return new Promise((resolve) => {
+      const wrap = document.createElement("div");
+      wrap.className = "ask-form";
+      const inp = document.createElement("input");
+      inp.type = "text";
+      inp.value = value == null ? "" : value;
+      wrap.appendChild(inp);
+      let settled = false;
+      const settle = (v) => { if (!settled) { settled = true; resolve(v); } };
+      inp.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") { e.preventDefault(); $("modal-okbtn").click(); }
+      });
+      showModal(title, wrap, () => settle(inp.value.trim()), () => settle(null));
+      inp.focus();
+      inp.select();
+    });
+  }
+
+  function askConfirm(message) {
+    return new Promise((resolve) => {
+      const p = document.createElement("p");
+      p.className = "checklist";
+      p.textContent = message;
+      let settled = false;
+      const settle = (v) => { if (!settled) { settled = true; resolve(v); } };
+      showModal(T.confirm_title, p, () => settle(true), () => settle(false));
+    });
+  }
 
   function fieldForm(fields, values) {
     const wrap = document.createElement("div");
@@ -191,9 +235,9 @@
   });
 
   // ---- show bar ----
-  const saveAs = () => {
+  const saveAs = async () => {
     const cur = snap && snap.show.file ? snap.show.file.replace(/\.json$/, "") : (snap ? snap.show.name : "");
-    const name = prompt(T.prompt_show_name, cur);
+    const name = await askText(T.prompt_show_name, cur);
     if (name) api("/api/save_as", { name }).then((r) => (r.ok ? toast(sub("toast_saved", { file: r.file })) : apiErr(r)));
   };
   $("btn-save").addEventListener("click", async () => {
@@ -256,8 +300,8 @@
   // ---- beamer columns: add-channel + lens chips ----
   document.querySelectorAll(".beamer-col").forEach((col) => {
     const beamer = col.dataset.beamer;
-    col.querySelector(".add-channel").addEventListener("click", () => {
-      const name = prompt(T.prompt_channel_name);
+    col.querySelector(".add-channel").addEventListener("click", async () => {
+      const name = await askText(T.prompt_channel_name, "");
       api(`/api/beamer/${beamer}/channel/add`, name ? { name } : {}).then((r) => { if (!r.ok) apiErr(r); });
     });
     const chips = col.querySelector(".chips");
@@ -338,14 +382,14 @@
       setTimeout(() => c.showBtn.classList.remove("warn"), 350);
       api(`${P}/show`).then((r) => { if (!r.ok) apiErr(r); });
     });
-    c.name.addEventListener("click", () => {
-      const name = prompt(T.prompt_channel_name, c.name.textContent);
+    c.name.addEventListener("click", async () => {
+      const name = await askText(T.prompt_channel_name, c.name.textContent);
       if (name) api(`${P}/rename`, { name }).then((r) => { if (!r.ok) apiErr(r); });
     });
     c.enable.addEventListener("change", () => api(`${P}/enable`, { enabled: c.enable.checked }));
     c.oscBtn.addEventListener("click", () => { const ch = findCh(beamer, cid); if (ch) openOscModal(beamer, cid, ch); });
-    c.delBtn.addEventListener("click", () => {
-      if (confirm(T.confirm_delete_channel)) api(`${P}/delete`).then((r) => { if (!r.ok) apiErr(r); });
+    c.delBtn.addEventListener("click", async () => {
+      if (await askConfirm(T.confirm_delete_channel)) api(`${P}/delete`).then((r) => { if (!r.ok) apiErr(r); });
     });
     c.calToggle.addEventListener("click", () => {
       const ch = findCh(beamer, cid);
@@ -379,7 +423,7 @@
       const row = ch && ch.points && ch.points[idx];
       if (!row) return;
       if (btn.dataset.action === "del") {
-        if (confirm(T.confirm_delete_point)) {
+        if (await askConfirm(T.confirm_delete_point)) {
           const r = await api(`${P}/points`, { op: "delete", index: idx });
           if (!r.ok) apiErr(r);
         }
@@ -387,7 +431,7 @@
         openPointModal(beamer, cid, idx, row);
       } else if (btn.dataset.action === "recap") {
         const live = snap && snap.distance.abs_m;
-        if (confirm(sub("confirm_recapture", { old: fmt(row.distance_m, 3), new: fmt(live, 3) }))) {
+        if (await askConfirm(sub("confirm_recapture", { old: fmt(row.distance_m, 3), new: fmt(live, 3) }))) {
           const r = await api(`${P}/points`, { op: "recapture", index: idx });
           if (!r.ok) apiErr(r);
         }
@@ -400,11 +444,11 @@
       const val = (trim[key] != null ? trim[key] : (key === "scale_mul" ? 1 : 0)) + parseFloat(btn.dataset.step);
       api(`${P}/trim`, { [key]: Math.round(val * 10000) / 10000 });
     }));
-    el.querySelector(".trim-bake").addEventListener("click", () => {
-      if (confirm(T.confirm_bake)) api(`${P}/trim/bake`).then((r) => { if (!r.ok) apiErr(r); });
+    el.querySelector(".trim-bake").addEventListener("click", async () => {
+      if (await askConfirm(T.confirm_bake)) api(`${P}/trim/bake`).then((r) => { if (!r.ok) apiErr(r); });
     });
-    el.querySelector(".trim-reset").addEventListener("click", () => {
-      if (confirm(T.confirm_reset_trim)) api(`${P}/trim/reset`);
+    el.querySelector(".trim-reset").addEventListener("click", async () => {
+      if (await askConfirm(T.confirm_reset_trim)) api(`${P}/trim/reset`);
     });
     return c;
   }

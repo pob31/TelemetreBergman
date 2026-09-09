@@ -30,4 +30,6 @@ opt-level = "z"
 lto = true
 codegen-units = 1
 strip = true
-panic = "abort"
+# NOT panic = "abort": the engine tick catches its own panics so one bad tick
+# cannot stop the projection, and the state mutex recovers from poisoning for
+# the same reason. Aborting would defeat both.

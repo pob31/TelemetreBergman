@@ -8,6 +8,7 @@ pub mod api;
 pub mod config;
 pub mod engine;
 pub mod interp;
+pub mod log;
 pub mod millumin;
 pub mod permissions;
 pub mod show;

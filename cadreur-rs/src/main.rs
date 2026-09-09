@@ -23,7 +23,7 @@ use cadreur::telemetre::Telemetre;
 fn load_startup_show(state: &Shared) {
     let last = { lock(state).load_last_show_path() };
     let Some(path) = last else {
-        eprintln!("No previous show to reopen — start from the interface.");
+        cadreur::log_line!("No previous show to reopen — start from the interface.");
         return;
     };
     // Rotating backups before touching the file, but never rotating a broken
@@ -34,9 +34,9 @@ fn load_startup_show(state: &Shared) {
             let mut st = lock(state);
             st.show = doc;
             st.show_path = Some(path.clone());
-            eprintln!("Loaded show {}", path.display());
+            cadreur::log_line!("Loaded show {}", path.display());
         }
-        Err(e) => eprintln!("Could not load last show {}: {e}", path.display()),
+        Err(e) => cadreur::log_line!("Could not load last show {}: {e}", path.display()),
     }
 }
 
@@ -66,7 +66,7 @@ fn spawn_first_launch_permission_check(cfg: &Config, state: &Shared) {
             return;
         }
         let hint = permissions::local_network_hint(&host);
-        eprintln!("\n{hint}\n");
+        cadreur::log_line!("\n{hint}\n");
         if first_launch {
             permissions::alert("Cadreur — autorisation réseau local", &hint);
             let _ = std::fs::write(&marker, "");
@@ -78,8 +78,13 @@ fn spawn_first_launch_permission_check(cfg: &Config, state: &Shared) {
 async fn main() {
     let headless = std::env::args().any(|a| a == "--headless");
 
+    // Before anything that might have something to report: a bundle launched
+    // from the Finder has no stderr, so until this runs nothing is recorded.
+    cadreur::log::init(config::log_path());
+    cadreur::log_line!("--- Cadreur {} starting ---", env!("CARGO_PKG_VERSION"));
+
     if let Err(e) = config::ensure_data_dir() {
-        eprintln!("Cannot create the data directory: {e}");
+        cadreur::log_line!("Cannot create the data directory: {e}");
     }
     let cfg = Config::load();
     let state = shared(cfg.clone());
@@ -93,7 +98,7 @@ async fn main() {
     // with the interface showing nothing more useful than "Pi hors ligne".
     let notes = permissions::startup_notes(&cfg);
     for n in &notes {
-        eprintln!("Autorisation attendue — {n}");
+        cadreur::log_line!("Autorisation attendue — {n}");
     }
     spawn_first_launch_permission_check(&cfg, &state);
 
@@ -105,9 +110,18 @@ async fn main() {
             ticker.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
             loop {
                 ticker.tick().await;
-                let mut st = lock(&state);
-                let mut eng = engine.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
-                eng.tick(&mut st, monotonic());
+                // A bad tick must never kill the engine — the Python guarded
+                // this explicitly (`engine.py`), and the port had lost it: an
+                // unguarded panic here stopped the projection dead while the
+                // interface carried on answering, looking healthy.
+                let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                    let mut st = lock(&state);
+                    let mut eng = engine.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+                    eng.tick(&mut st, monotonic());
+                }));
+                if outcome.is_err() {
+                    cadreur::log_line!("Engine tick failed — continuing.");
+                }
             }
         })
     };
@@ -120,28 +134,30 @@ async fn main() {
     let listener = match tokio::net::TcpListener::bind(&addr).await {
         Ok(l) => l,
         Err(e) => {
-            eprintln!("Cannot bind {addr}: {e}");
-            eprintln!("Another program is probably using port {}.", cfg.web.port);
+            cadreur::log_line!("Cannot bind {addr}: {e}");
+            cadreur::log_line!("Another program is probably using port {}.", cfg.web.port);
             std::process::exit(1);
         }
     };
-    eprintln!(
+    cadreur::log_line!(
         "Cadreur up on {addr} (millumin {}:{}, telemetre {})",
-        cfg.millumin.host, cfg.millumin.port, cfg.telemetre.url
+        cfg.millumin.host,
+        cfg.millumin.port,
+        cfg.telemetre.url
     );
-    eprintln!("Data directory: {}", config::data_dir().display());
+    cadreur::log_line!("Data directory: {}", config::data_dir().display());
 
     let server = axum::serve(listener, api::router(app));
     if headless {
-        eprintln!("Open {}", cfg.web_url());
+        cadreur::log_line!("Open {}", cfg.web_url());
         if let Err(e) = server.await {
-            eprintln!("Server error: {e}");
+            cadreur::log_line!("Server error: {e}");
         }
     } else {
         // The window owns the main thread; the server runs behind it.
         tokio::spawn(async move {
             if let Err(e) = server.await {
-                eprintln!("Server error: {e}");
+                cadreur::log_line!("Server error: {e}");
             }
         });
         cadreur::window::run(&cfg.web_url());
