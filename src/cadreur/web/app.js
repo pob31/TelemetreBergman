@@ -80,6 +80,10 @@
       .then(async (r) => { try { return await r.json(); } catch (_) { return { ok: r.ok }; } })
       .catch(() => ({ ok: false, error: "network" }));
   const apiErr = (r) => toast(sub("toast_error", { msg: (r && r.error) || "?" }), 5000);
+  // Fire-and-forget with the failure still reported. A control whose request
+  // fails silently is indistinguishable from a control that is not wired at
+  // all — which is exactly how the dead calibrate button read from the régie.
+  const fire = (p) => p.then((r) => { if (!r || !r.ok) apiErr(r); }).catch(() => apiErr(null));
 
   // ---- toast ----
   let toastTimer = null;
@@ -221,7 +225,7 @@
   }
 
   // ---- header ----
-  $("btn-arm").addEventListener("click", () => { if (snap) api("/api/arm", { armed: !snap.armed }); });
+  $("btn-arm").addEventListener("click", () => { if (snap) fire(api("/api/arm", { armed: !snap.armed })); });
   $("btn-test").addEventListener("click", async () => {
     const r = await api("/api/test_millumin");
     if (r.ok && r.note === "send-only") toast(T.toast_test_sendonly);
@@ -386,14 +390,14 @@
       const name = await askText(T.prompt_channel_name, c.name.textContent);
       if (name) api(`${P}/rename`, { name }).then((r) => { if (!r.ok) apiErr(r); });
     });
-    c.enable.addEventListener("change", () => api(`${P}/enable`, { enabled: c.enable.checked }));
+    c.enable.addEventListener("change", () => fire(api(`${P}/enable`, { enabled: c.enable.checked })));
     c.oscBtn.addEventListener("click", () => { const ch = findCh(beamer, cid); if (ch) openOscModal(beamer, cid, ch); });
     c.delBtn.addEventListener("click", async () => {
       if (await askConfirm(T.confirm_delete_channel)) api(`${P}/delete`).then((r) => { if (!r.ok) apiErr(r); });
     });
     c.calToggle.addEventListener("click", () => {
       const ch = findCh(beamer, cid);
-      api(`${P}/calibrate`, { on: !(ch && ch.calibrating) });
+      fire(api(`${P}/calibrate`, { on: !(ch && ch.calibrating) }));
     });
     c.capture.addEventListener("click", async () => {
       const r = await api(`${P}/capture`);
@@ -406,7 +410,7 @@
     const wire = (sl, val, field) => sl.addEventListener("input", () => {
       const v = parseFloat(sl.value);
       val.textContent = v.toFixed(4);
-      api(`${P}/manual`, { [field]: v });
+      fire(api(`${P}/manual`, { [field]: v }));
     });
     wire(c.driveScale, c.driveScaleVal, "scale");
     wire(c.driveVpos, c.driveVposVal, "pos_v");
@@ -442,7 +446,7 @@
       const trim = (ch && ch.trim) || { scale_mul: 1, dx_px: 0, dy_px: 0 };
       const key = btn.dataset.trim;
       const val = (trim[key] != null ? trim[key] : (key === "scale_mul" ? 1 : 0)) + parseFloat(btn.dataset.step);
-      api(`${P}/trim`, { [key]: Math.round(val * 10000) / 10000 });
+      fire(api(`${P}/trim`, { [key]: Math.round(val * 10000) / 10000 }));
     }));
     el.querySelector(".trim-bake").addEventListener("click", async () => {
       if (await askConfirm(T.confirm_bake)) api(`${P}/trim/bake`).then((r) => { if (!r.ok) apiErr(r); });
