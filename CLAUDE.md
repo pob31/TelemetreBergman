@@ -81,6 +81,18 @@ the calibrations or the environment.
   `confirm()` returns false, and the control behind them is dead with no error.
   That cost the operator save-as, rename, delete and every trim confirmation.
   Use `askText()` / `askConfirm()` in `app.js` — same modal in both builds.
+- **Never rewrite DOM that has not changed.** The render runs at 10 Hz. WebKit
+  fires a click only if mousedown and mouseup resolve consistently, so
+  assigning `textContent` unconditionally swaps the node under the pointer
+  every 100 ms and the click is silently dropped — in wry only. Chromium
+  tolerates it, so a browser test will never catch this. That killed the
+  calibrate toggle, rename and ARM. Use `setText` / `setClass` / `setProp` in
+  `app.js`, which compare before assigning.
+- **To debug a UI fault you cannot reproduce,** drive the running server with
+  headless Chromium rather than reading code: `npm i playwright-core` in a
+  scratch dir, point it at `http://127.0.0.1:8080`, and capture `console`,
+  `pageerror` and POST requests while clicking. If it works there but not in
+  the window, the fault is WebKit-specific — that is the fast way to tell.
 - **Diagnostics must go through `log_line!`,** never `eprintln!`: a bundle
   launched from the Finder has no stderr, and `scripts/diagnose_mac.sh` reads
   the log file.
