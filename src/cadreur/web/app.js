@@ -85,6 +85,18 @@
   // all — which is exactly how the dead calibrate button read from the régie.
   const fire = (p) => p.then((r) => { if (!r || !r.ok) apiErr(r); }).catch(() => apiErr(null));
 
+  // Report a fault once per distinct message. updateCard runs at 10 Hz, so an
+  // unthrottled report would bury the log in one repeated line. Anything sent
+  // here reaches ~/Library/Logs/Cadreur/cadreur.log in the bundled build.
+  const reported = new Set();
+  function reportOnce(where, e) {
+    const msg = where + ": " + ((e && (e.stack || e.message)) || String(e));
+    if (reported.has(msg)) return;
+    reported.add(msg);
+    console.error(msg);
+    toast(where + " — " + ((e && e.message) || e), 6000);
+  }
+
   // ---- toast ----
   let toastTimer = null;
   function toast(msg, ms = 3500) {
@@ -352,6 +364,15 @@
   const findCh = (beamer, cid) => (snap && (snap.beamers[beamer] || []).find((c) => c.id === cid)) || null;
 
   function buildCard(beamer, cid) {
+    try {
+      return buildCardInner(beamer, cid);
+    } catch (e) {
+      reportOnce("buildCard " + beamer + "/" + cid, e);
+      throw e;
+    }
+  }
+
+  function buildCardInner(beamer, cid) {
     const el = tpl.content.firstElementChild.cloneNode(true);
     el.dataset.cid = cid;
     applyI18n(el);
@@ -541,6 +562,10 @@
   }
 
   function updateCard(c, ch, d) {
+    try { updateCardInner(c, ch, d); } catch (e) { reportOnce("updateCard", e); }
+  }
+
+  function updateCardInner(c, ch, d) {
     if (document.activeElement !== c.name) c.name.textContent = ch.name;
     if (document.activeElement !== c.enable) c.enable.checked = !!ch.enabled;
 
