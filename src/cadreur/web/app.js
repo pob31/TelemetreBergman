@@ -97,6 +97,15 @@
     toast(where + " — " + ((e && e.message) || e), 6000);
   }
 
+  // WebKit drops a click when the node under the pointer is replaced between
+  // mousedown and mouseup. The render runs at 10 Hz, so assigning textContent
+  // unconditionally swapped the text node inside a button every 100 ms and made
+  // that button unclickable in the wry window — while Chromium, which is more
+  // forgiving, kept working. Only ever write what actually changed.
+  const setText = (el, s) => { if (el.textContent !== s) el.textContent = s; };
+  const setClass = (el, s) => { if (el.className !== s) el.className = s; };
+  const setProp = (el, k, v) => { if (el[k] !== v) el[k] = v; };
+
   // ---- toast ----
   let toastTimer = null;
   function toast(msg, ms = 3500) {
@@ -486,11 +495,11 @@
 
   function render(d) {
     const src = d.distance.source;
-    $("pi-dot").className = "dot " + (src === "live" ? "ok" : src === "stale" ? "stale" : "off");
+    setClass($("pi-dot"), "dot " + (src === "live" ? "ok" : src === "stale" ? "stale" : "off"));
     $("pi-text").textContent = (src === "live" ? T.pi_live : src === "stale" ? T.pi_stale : T.pi_disconnected)
       + (d.distance.abs_m != null ? " " + fmt(d.distance.abs_m, 3) + " m" : "");
     const mil = d.millumin;
-    $("mil-dot").className = "dot " + (mil.ok == null ? "" : mil.ok ? "ok" : "off");
+    setClass($("mil-dot"), "dot " + (mil.ok == null ? "" : mil.ok ? "ok" : "off"));
     $("mil-text").textContent = mil.ok == null ? T.mil_unknown
       : mil.ok ? T.mil_ok + (mil.latency_ms != null ? ` (${mil.latency_ms} ms)` : "") : T.mil_fail;
     const banner = $("banner");
@@ -502,11 +511,11 @@
       banner.classList.remove("hidden");
     } else banner.classList.add("hidden");
     const armBtn = $("btn-arm");
-    armBtn.className = "btn arm " + (d.armed ? "armed" : "off");
-    armBtn.firstElementChild.textContent = d.armed ? T.arm_on : T.arm_off;
+    setClass(armBtn, "btn arm " + (d.armed ? "armed" : "off"));
+    setText(armBtn.firstElementChild, d.armed ? T.arm_on : T.arm_off);
 
-    $("abs-m").textContent = fmt(d.distance.abs_m, 3);
-    $("stage-m").textContent = d.distance.position_m == null ? "—.———" : signed(d.distance.position_m, 3);
+    setText($("abs-m"), fmt(d.distance.abs_m, 3));
+    setText($("stage-m"), d.distance.position_m == null ? "—.———" : signed(d.distance.position_m, 3));
     renderTravel(d);
 
     const anyCal = ["front", "rear"].some((b) => (d.beamers[b] || []).some((c) => c.calibrating));
@@ -515,8 +524,8 @@
     renderBeamer("front", d);
     renderBeamer("rear", d);
 
-    $("show-dot").className = "dot " + (d.show.dirty ? "stale" : "ok");
-    $("show-name").textContent = d.show.name;
+    setClass($("show-dot"), "dot " + (d.show.dirty ? "stale" : "ok"));
+    setText($("show-name"), d.show.name);
     $("show-file").textContent = (d.show.file || "(unsaved)")
       + (d.show.dirty ? "" : d.show.autosave ? " · autosaved" : "");
     for (const k of SMOOTH_KEYS) {
@@ -566,26 +575,26 @@
   }
 
   function updateCardInner(c, ch, d) {
-    if (document.activeElement !== c.name) c.name.textContent = ch.name;
-    if (document.activeElement !== c.enable) c.enable.checked = !!ch.enabled;
+    if (document.activeElement !== c.name) setText(c.name, ch.name);
+    if (document.activeElement !== c.enable) setProp(c.enable, "checked", !!ch.enabled);
 
     let key, cls;
     if (ch.reason) { key = REASON_KEY[ch.reason] || ch.reason; cls = ch.reason === "calibrating" ? "warn" : "off"; }
     else if (ch.clamped) { key = ch.clamped === "low" ? "st_clamped_low" : "st_clamped_high"; cls = "stale"; }
     else { key = "st_ok"; cls = "ok"; }
-    c.statusDot.className = "status-dot dot " + cls;
-    c.statusText.textContent = key === "st_uncalibrated" ? sub(key, { mem: ch.cal_key }) : (T[key] || key);
+    setClass(c.statusDot, "status-dot dot " + cls);
+    setText(c.statusText, key === "st_uncalibrated" ? sub(key, { mem: ch.cal_key }) : (T[key] || key));
 
     const v = ch.values;
-    c.live.textContent = !v ? "—"
-      : `échelle ${fmt(v.scale, 4)} · H ${fmt(v.pos_x, 4)} · V ${fmt(v.pos_y, 4)}` + (ch.sending ? " · " + T.sending : "");
+    setText(c.live, !v ? "—"
+      : `échelle ${fmt(v.scale, 4)} · H ${fmt(v.pos_x, 4)} · V ${fmt(v.pos_y, 4)}` + (ch.sending ? " · " + T.sending : ""));
 
     const calOn = !!ch.calibrating;
     c.calflag.classList.toggle("hidden", !calOn);
     c.manual.classList.toggle("hidden", !calOn);
-    c.calToggle.textContent = calOn ? T.calibrate_exit : T.calibrate_mode;
+    setText(c.calToggle, calOn ? T.calibrate_exit : T.calibrate_mode);
     c.calToggle.classList.toggle("warn", calOn);
-    c.capture.disabled = !calOn || d.distance.source !== "live";
+    setProp(c.capture, "disabled", !calOn || d.distance.source !== "live");
 
     const man = ch.manual;
     if (man) {
@@ -628,9 +637,9 @@
     }
 
     const trim = ch.trim || { scale_mul: 1, dx_px: 0, dy_px: 0 };
-    c.trimScale.textContent = fmt(trim.scale_mul, 3);
-    c.trimX.textContent = signed(trim.dx_px, 4);  // H/V trim nudges are 10x finer
-    c.trimY.textContent = signed(trim.dy_px, 4);
+    setText(c.trimScale, fmt(trim.scale_mul, 3));
+    setText(c.trimX, signed(trim.dx_px, 4));  // H/V trim nudges are 10x finer
+    setText(c.trimY, signed(trim.dy_px, 4));
   }
 
   function renderTravel(d) {
